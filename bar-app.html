@@ -657,7 +657,12 @@ var currentCustomer=null,discountApplied=false;
 function goPay(){
   if(!cart.length)return;
   selPay=null;selT=null;isP=false;discountApplied=false;
-  openRegisterModal();
+  if(currentCustomer){
+    // Ya registrado → directo al pago, sin modal
+    window.location.hash='payment';
+  }else{
+    openRegisterModal();
+  }
 }
 function openRegisterModal(){
   var rb=document.getElementById('reg-body');
