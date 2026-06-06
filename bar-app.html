@@ -160,6 +160,30 @@ body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;overflo
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .fi{animation:fi .3s ease forwards;}
+/* ── REGISTRO MODAL ── */
+.reg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s;}
+.reg-overlay.active{opacity:1;pointer-events:all;}
+.reg-modal{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:20px 20px 0 0;z-index:151;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);}
+.reg-modal.active{transform:translateY(0);}
+.reg-drag{width:40px;height:4px;border-radius:2px;background:var(--border);margin:1rem auto .75rem;}
+.reg-body{padding:.25rem 1.25rem 2rem;}
+.reg-badge{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;font-family:'Bowlby One SC',sans-serif;font-size:1rem;letter-spacing:1px;text-align:center;padding:.7rem 1rem;border-radius:12px;margin-bottom:1rem;}
+.reg-badge small{display:block;font-family:Inter,sans-serif;font-size:.7rem;font-weight:600;margin-top:.2rem;opacity:.7;}
+.reg-title{font-family:'Bowlby One SC',sans-serif;font-size:1.15rem;color:var(--text);text-align:center;margin-bottom:.3rem;}
+.reg-sub{font-size:.78rem;color:var(--text2);text-align:center;margin-bottom:1.1rem;line-height:1.5;}
+.reg-inp{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:.75rem 1rem;font-size:.88rem;color:var(--text);width:100%;outline:none;transition:border-color .2s;font-family:Inter,sans-serif;margin-bottom:.65rem;}
+.reg-inp:focus{border-color:var(--gold);}
+.reg-inp::placeholder{color:var(--text3);}
+.reg-opt{font-size:.7rem;color:var(--text3);margin-top:-.4rem;margin-bottom:.65rem;padding-left:.25rem;}
+.btn-reg{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.9rem;border-radius:12px;font-family:'Bowlby One SC',sans-serif;font-size:.95rem;letter-spacing:1px;cursor:pointer;transition:opacity .2s;margin-bottom:.6rem;}
+.btn-reg:hover{opacity:.88;}
+.btn-reg-sec{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:.75rem;border-radius:12px;font-family:Oswald,sans-serif;font-size:.85rem;letter-spacing:.5px;cursor:pointer;transition:all .2s;margin-bottom:.45rem;}
+.btn-reg-sec:hover{border-color:var(--text2);color:var(--text);}
+.btn-skip{width:100%;background:none;border:none;color:var(--text3);font-size:.78rem;font-family:Inter,sans-serif;cursor:pointer;padding:.5rem;text-decoration:underline;}
+.reg-welcome{background:rgba(212,160,23,.1);border:1px solid rgba(212,160,23,.3);border-radius:12px;padding:1rem;text-align:center;margin-bottom:1rem;}
+.reg-welcome-name{font-family:'Bowlby One SC',sans-serif;font-size:1.1rem;color:var(--gold);margin-bottom:.25rem;}
+.reg-welcome-sub{font-size:.78rem;color:var(--text2);}
+.disc-badge{background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);color:var(--green);font-family:Oswald,sans-serif;font-size:.85rem;font-weight:600;letter-spacing:.5px;padding:.35rem .8rem;border-radius:8px;display:inline-block;margin-top:.5rem;}
 /* ── BRAND HEADER ── */
 .brand-hdr{background:var(--bg2);padding:1.5rem 1rem 1.1rem;text-align:center;border-bottom:1px solid var(--border);}
 .brand-logo-box{display:inline-flex;align-items:center;justify-content:center;padding:.5rem;margin-bottom:.75rem;}
@@ -254,6 +278,13 @@ body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;overflo
 </a>
 
 <!-- Modal + overlay + toast (outside #app so they float above everything) -->
+<!-- Registro modal -->
+<div class="reg-overlay" id="reg-overlay" onclick="skipRegister()"></div>
+<div class="reg-modal" id="reg-modal">
+  <div class="reg-drag"></div>
+  <div class="reg-body" id="reg-body"></div>
+</div>
+
 <div class="overlay" id="overlay" onclick="closeModal()"></div>
 <div class="modal" id="modal">
   <div class="modal-drag"></div>
@@ -619,12 +650,81 @@ function removeItem(id){
   renderOrder();
 }
 
-/* ══ PAYMENT ══ */
+/* ══ REGISTRO ══ */
+var currentCustomer=null,discountApplied=false;
+(function(){try{var s=localStorage.getItem('imm_customer');if(s)currentCustomer=JSON.parse(s);}catch(e){}}());
+
 function goPay(){
   if(!cart.length)return;
-  selPay=null;selT=null;isP=false;
+  selPay=null;selT=null;isP=false;discountApplied=false;
+  openRegisterModal();
+}
+function openRegisterModal(){
+  var rb=document.getElementById('reg-body');
+  if(currentCustomer){
+    // Cliente ya registrado
+    rb.innerHTML=
+      '<div class="reg-welcome">'+
+        '<div class="reg-welcome-name">👋 ¡Hola, '+currentCustomer.name+'!</div>'+
+        '<div class="reg-welcome-sub">Estás registrado — tus pedidos quedan guardados</div>'+
+        '<span class="disc-badge">✓ Cuenta activa</span>'+
+      '</div>'+
+      '<button class="btn-reg" onclick="continueWithCustomer()">Continuar al pago</button>'+
+      '<button class="btn-skip" onclick="clearCustomerAndContinue()">No soy '+currentCustomer.name+' — continuar sin cuenta</button>';
+  }else{
+    // Nuevo cliente
+    var total=cart.reduce(function(s,i){return s+i.pr;},0);
+    var disc=Math.round(total*0.1);
+    rb.innerHTML=
+      '<div class="reg-badge">🎁 REGISTRATE Y OBTENÉ 10% OFF<small>$'+disc.toLocaleString('es-AR')+' de descuento en este pedido</small></div>'+
+      '<input class="reg-inp" id="r-name" placeholder="Tu nombre" type="text">'+
+      '<input class="reg-inp" id="r-phone" placeholder="WhatsApp (ej: 2216997705)" type="tel">'+
+      '<input class="reg-inp" id="r-email" placeholder="Email (opcional)" type="email">'+
+      '<div class="reg-opt">El email es opcional — solo para enviarte novedades</div>'+
+      '<button class="btn-reg" onclick="submitRegister()">Registrarme y aplicar 10% OFF</button>'+
+      '<button class="btn-reg-sec" onclick="showLoginForm()">Ya tengo cuenta — ingresar</button>'+
+      '<button class="btn-skip" onclick="skipRegister()">No gracias, continuar sin descuento</button>';
+  }
+  document.getElementById('reg-overlay').classList.add('active');
+  document.getElementById('reg-modal').classList.add('active');
+}
+function closeRegModal(){
+  document.getElementById('reg-overlay').classList.remove('active');
+  document.getElementById('reg-modal').classList.remove('active');
+}
+function showLoginForm(){
+  var rb=document.getElementById('reg-body');
+  rb.innerHTML=
+    '<div class="reg-title">Ingresá tu WhatsApp</div>'+
+    '<div class="reg-sub">Buscamos tu cuenta para reconocerte</div>'+
+    '<input class="reg-inp" id="r-login-phone" placeholder="WhatsApp (ej: 2216997705)" type="tel">'+
+    '<button class="btn-reg" onclick="submitLogin()">Ingresar</button>'+
+    '<button class="btn-reg-sec" onclick="openRegisterModal()">← Volver</button>';
+}
+function submitLogin(){
+  var phone=document.getElementById('r-login-phone').value.trim().replace(/\D/g,'');
+  if(!phone){toast('Ingresá tu WhatsApp');return;}
+  wsSend({type:'find-customer',phone:phone,_cb:'login'});
+  toast('Buscando tu cuenta...');
+}
+function submitRegister(){
+  var name=document.getElementById('r-name').value.trim();
+  var phone=document.getElementById('r-phone').value.trim().replace(/\D/g,'');
+  var email=document.getElementById('r-email').value.trim();
+  if(!name){toast('Ingresá tu nombre');return;}
+  if(!phone||phone.length<8){toast('Ingresá un WhatsApp válido');return;}
+  var customer={name:name,phone:phone,email:email,since:Date.now()};
+  wsSend({type:'register-customer',customer:customer});
+  currentCustomer=customer;discountApplied=true;
+  localStorage.setItem('imm_customer',JSON.stringify(customer));
+  closeRegModal();
   window.location.hash='payment';
 }
+function continueWithCustomer(){closeRegModal();window.location.hash='payment';}
+function skipRegister(){closeRegModal();currentCustomer=null;discountApplied=false;window.location.hash='payment';}
+function clearCustomerAndContinue(){currentCustomer=null;localStorage.removeItem('imm_customer');discountApplied=false;closeRegModal();window.location.hash='payment';}
+
+/* ══ PAYMENT ══ */
 function pickTable(n){
   isP=(n===0);selT=n;
   document.querySelectorAll('.tmb').forEach(function(b){b.classList.remove('sel');});
@@ -640,9 +740,13 @@ function handleCard(e){e.stopPropagation();toast('Procesando pago con tarjeta...
 function renderPay(){
   var sub=cart.reduce(function(s,i){return s+i.pr;},0);
   var where=isP?'Para retirar':(selT?'Mesa '+selT:'—');
+  var sub=cart.reduce(function(s,i){return s+i.pr;},0);
+  var disc=discountApplied?Math.round(sub*0.1):0;
+  var total=sub-disc;
   var lines=cart.map(function(i){
     return '<div class="pay-line"><span>'+i.e+' '+(i.isDr?i.n+' x'+i.q:i.n)+'</span><span class="pay-line-pr">$'+i.pr.toLocaleString('es-AR')+'</span></div>';
   }).join('');
+  var discLine=disc>0?'<div class="pay-line" style="color:var(--green)"><span>🎁 Descuento 10% ('+currentCustomer.name+')</span><span>-$'+disc.toLocaleString('es-AR')+'</span></div>':'';
   var tc='';for(var i=1;i<=20;i++)tc+='<button class="tmb'+(selT===i?' sel':'')+'" onclick="pickTable('+i+')">'+i+'</button>';
   var tableBlock='<div class="table-mini-wrap"><div class="table-mini-lbl">¿Dónde estás?</div><div class="table-mini-grid">'+tc+'</div><button class="pickup-mini'+(isP?' sel':'')+'" id="pmb" onclick="pickTable(0)">Para retirar en caja</button></div>';
   var mpBtn=selPay==='mp'?'<button class="mp-btn" onclick="handleMP(event)">&#128179; Pagar con Mercado Pago</button>':'';
@@ -651,8 +755,8 @@ function renderPay(){
   var cashBox=selPay==='cash'?'<div class="cash-box"><div class="cash-nm">Pedido listo para confirmar</div><div class="cash-dc">El pago se realiza en efectivo en caja o con el mozo</div></div><button class="btn-confirm" style="margin:.5rem 1rem .9rem;width:calc(100% - 2rem)" onclick="confirmOrder()">Confirmar Pedido</button>':'';
   document.getElementById('payment-content').innerHTML=
     tableBlock+
-    '<div class="pay-summary"><div class="pay-sum-hd">Resumen — '+where+'</div>'+lines+
-    '<div class="pay-total"><span class="pay-total-lbl">Total</span><span class="pay-total-val">$'+sub.toLocaleString('es-AR')+'</span></div></div>'+
+    '<div class="pay-summary"><div class="pay-sum-hd">Resumen — '+where+'</div>'+lines+discLine+
+    '<div class="pay-total"><span class="pay-total-lbl">Total</span><span class="pay-total-val">$'+total.toLocaleString('es-AR')+'</span></div></div>'+
     '<div class="pmethods-title">Método de pago</div>'+
     '<div class="pmethod'+(selPay==='mp'?' sel':'')+'" onclick="pickPay(\'mp\')">'+
       '<div class="pmethod-head"><div class="pm-ico ico-mp">&#128179;</div><div><div class="pm-nm">Mercado Pago</div><div class="pm-dc">Débito, crédito o saldo MP</div></div><div class="pm-radio"><div class="radio-dot"></div></div></div>'+mpBtn+
@@ -668,10 +772,14 @@ function renderPay(){
 /* ══ SUCCESS / RESET ══ */
 function confirmOrder(){
   var n=Math.floor(10000+Math.random()*90000);
+  var subtotal=cart.reduce(function(s,i){return s+i.pr;},0);
+  var discount=discountApplied?Math.round(subtotal*0.1):0;
+  var total=subtotal-discount;
   var orderObj={
     id:'#'+n,ts:Date.now(),table:selT,pickup:isP,pay:selPay,
     items:cart.map(function(i){return Object.assign({},i);}),
-    total:cart.reduce(function(s,i){return s+i.pr;},0),
+    subtotal:subtotal,discount:discount,total:total,
+    customer:currentCustomer?{name:currentCustomer.name,phone:currentCustomer.phone}:null,
     status:'nuevo'
   };
   wsSend({type:'new-order',order:orderObj});
@@ -707,6 +815,19 @@ function connectWS(){
       if(d.type==='menu-update'){MENU=d.menu;buildMenu();}
       if(d.type==='drinks-update'){DRINKS=d.drinks;buildDrinks();}
       if(d.type==='stock-update'){STOCK=d.stock;buildMenu();buildDrinks();}
+      if(d.type==='customer-found'){
+        if(d.customer){
+          currentCustomer=d.customer;
+          localStorage.setItem('imm_customer',JSON.stringify(d.customer));
+          discountApplied=false; // returning customer, no discount
+          closeRegModal();
+          window.location.hash='payment';
+          toast('👋 Bienvenido '+d.customer.name);
+        }else{
+          toast('No encontramos esa cuenta — registrate');
+          openRegisterModal();
+        }
+      }
     };
   }catch(ex){}
 }

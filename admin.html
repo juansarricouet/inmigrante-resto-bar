@@ -253,6 +253,10 @@ body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;min-hei
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
       Stock
     </button>
+    <button class="tab-btn" id="tbtn-clientes" onclick="switchTab('clientes')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </button>
     <button class="tab-btn" id="tbtn-stats" onclick="switchTab('stats')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Stats
@@ -292,6 +296,11 @@ body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;min-hei
   <!-- STOCK -->
   <div class="tab-content" id="tab-stock">
     <div id="stock-content"></div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div class="tab-content" id="tab-clientes">
+    <div id="clientes-content"></div>
   </div>
 
   <!-- ESTADÍSTICAS -->
@@ -560,6 +569,8 @@ function handleWSmsg(d){
   if(d.type==='order-status'){var o=orders.find(function(x){return x.id===d.id;});if(o){o.status=d.status;renderPedidos();updateOrderBadge();}}
   if(d.type==='order-delete'){orders=orders.filter(function(o){return o.id!==d.id;});renderPedidos();updateOrderBadge();}
   if(d.type==='clear-entregados'){orders=orders.filter(function(o){return o.status!=='entregado';});renderPedidos();}
+  if(d.type==='customers-update'){adminCustomers=d.customers||[];if(document.getElementById('tab-clientes').classList.contains('active'))renderClientes();}
+  if(d.type==='init'&&d.customers){adminCustomers=d.customers;}
 }
 function showPing(){
   var p=document.getElementById('ping');p.classList.add('show');
@@ -652,12 +663,53 @@ function startClock(){
 }
 
 /* ══ TAB SWITCHING ══ */
+var adminCustomers=[];
 function switchTab(name){
   document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('tbtn-'+name).classList.add('active');
   if(name==='stats') renderStats();
+  if(name==='clientes'){wsSend({type:'get-customers'});renderClientes();}
+}
+function renderClientes(){
+  var el=document.getElementById('clientes-content');
+  if(!adminCustomers.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-ico">👥</div><div class="empty-msg">Sin clientes registrados</div><div class="empty-sub">Aparecen cuando alguien se registra en el menú</div></div>';
+    return;
+  }
+  var sorted=adminCustomers.slice().sort(function(a,b){return (b.totalSpent||0)-(a.totalSpent||0);});
+  el.innerHTML=
+    '<div class="stats-cards" style="margin-bottom:.75rem">'+
+      '<div class="stat-card"><div class="stat-val">'+adminCustomers.length+'</div><div class="stat-lbl">Clientes</div></div>'+
+      '<div class="stat-card"><div class="stat-val small">$'+adminCustomers.reduce(function(s,c){return s+(c.totalSpent||0);},0).toLocaleString('es-AR')+'</div><div class="stat-lbl">Gastado total</div></div>'+
+      '<div class="stat-card"><div class="stat-val">'+adminCustomers.reduce(function(s,c){return s+(c.orders||0);},0)+'</div><div class="stat-lbl">Pedidos</div></div>'+
+    '</div>'+
+    '<div class="orders-list">'+
+    sorted.map(function(c){
+      var lastOrder=c.lastOrder?fmtDate(c.lastOrder):'—';
+      return '<div class="order-card" style="border-left:3px solid var(--gold)">'+
+        '<div class="order-hd">'+
+          '<div class="order-hd-left">'+
+            '<span class="order-id" style="font-size:.9rem">'+c.name+'</span>'+
+            '<span class="order-where">📱 '+c.phone+'</span>'+
+            (c.email?'<span class="order-where">✉ '+c.email+'</span>':'')+
+          '</div>'+
+          '<div class="order-hd-right">'+
+            '<span class="pay-badge pay-cash">'+( c.orders||0)+' pedidos</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="order-subhd">'+
+          '<span class="order-time">Registrado '+fmtDate(c.since)+'</span>'+
+          '<span class="order-time">Último pedido: '+lastOrder+'</span>'+
+        '</div>'+
+        '<div class="order-ft">'+
+          '<span class="order-total">$'+(c.totalSpent||0).toLocaleString('es-AR')+' gastados</span>'+
+          '<a href="https://wa.me/549'+c.phone+'" target="_blank" class="st-btn" style="text-decoration:none;background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.3);color:#25d366">📱 WhatsApp</a>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    '</div>';
 }
 
 /* ══ PEDIDOS ══ */

@@ -8,9 +8,12 @@ const STATIC_DIR = __dirname;
 const DATA_FILE  = path.join(__dirname, 'data.json');
 
 /* ── Data store (memory + file) ── */
-let store = { orders: [], menu: null, drinks: null, stock: {} };
+let store = { orders: [], menu: null, drinks: null, stock: {}, customers: [] };
 if (fs.existsSync(DATA_FILE)) {
-  try { store = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch(e) {}
+  try {
+    const saved = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    store = Object.assign({ orders:[], menu:null, drinks:null, stock:{}, customers:[] }, saved);
+  } catch(e) {}
 }
 function persist() {
   try { fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2)); } catch(e) {}
@@ -76,8 +79,13 @@ wss.on('connection', ws => {
       case 'new-order':
         store.orders.unshift(msg.order);
         if (store.orders.length > 1000) store.orders = store.orders.slice(0, 1000);
+        // update customer stats
+        if (msg.order.customer && msg.order.customer.phone) {
+          const cust = store.customers.find(x => x.phone === msg.order.customer.phone);
+          if (cust) { cust.orders = (cust.orders||0)+1; cust.totalSpent = (cust.totalSpent||0)+msg.order.total; cust.lastOrder = msg.order.ts; }
+        }
         persist();
-        broadcast(msg, ws);   // notify all admins (and other bar-apps)
+        broadcast(msg, ws);
         break;
 
       case 'menu-update':
@@ -115,6 +123,31 @@ wss.on('connection', ws => {
         store.orders = store.orders.filter(o => o.status !== 'entregado');
         persist();
         broadcast(msg, ws);
+        break;
+
+      case 'register-customer': {
+        const c = msg.customer;
+        const exists = store.customers.find(x => x.phone === c.phone);
+        if (!exists) {
+          c.id = Date.now();
+          c.orders = 0;
+          c.totalSpent = 0;
+          store.customers.push(c);
+          persist();
+        }
+        // notify admin of new/updated customer list
+        broadcast({ type: 'customers-update', customers: store.customers }, null);
+        break;
+      }
+
+      case 'find-customer': {
+        const found = store.customers.find(x => x.phone === msg.phone);
+        ws.send(JSON.stringify({ type: 'customer-found', customer: found || null, _cb: msg._cb }));
+        break;
+      }
+
+      case 'get-customers':
+        ws.send(JSON.stringify({ type: 'customers-update', customers: store.customers }));
         break;
     }
   });
