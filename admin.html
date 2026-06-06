@@ -1,0 +1,908 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Admin — Inmigrante</title><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bowlby+One+SC&family=Oswald:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#1f3b49;--bg2:#1a3240;--bg3:#162a36;--bg4:#12242e;--gold:#ecdcb9;--gold3:#c0aa82;--text:#ecdcb9;--text2:#a89e84;--text3:#5a5448;--border:#2a4f62;--red:#e85d5d;--green:#4caf50;--blue:#5b8dee;--purple:#7c3aed;--amber:#f59e0b;--hdr:56px;--tabnav:52px;}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;min-height:100vh;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--gold3);border-radius:2px;}
+
+/* ── PIN SCREEN ── */
+#pin-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+.pin-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem 1.75rem;width:min(340px,92vw);text-align:center;}
+.pin-logo{font-family:'Bowlby One SC',sans-serif;font-size:1.9rem;letter-spacing:3px;color:var(--gold);margin-bottom:.25rem;}
+.pin-sub{font-size:.78rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:1.75rem;}
+.pin-dots{display:flex;justify-content:center;gap:.75rem;margin-bottom:1.5rem;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--text3);transition:all .2s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);}
+.pin-dot.err{background:var(--red);border-color:var(--red);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+.pin-key{background:var(--bg3);border:1px solid var(--border);color:var(--text);height:54px;border-radius:12px;font-family:Oswald,sans-serif;font-size:1.3rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.pin-key:hover{background:var(--bg4);border-color:var(--text3);}
+.pin-key:active{transform:scale(.93);}
+.pin-key.del{color:var(--text3);font-size:.85rem;}
+.pin-key.zero{grid-column:2;}
+.pin-err{font-size:.75rem;color:var(--red);margin-top:.75rem;min-height:1rem;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shaking{animation:shake .35s ease;}
+
+/* ── ADMIN APP ── */
+#admin-app{display:none;flex-direction:column;min-height:100vh;}
+#admin-app.visible{display:flex;}
+
+/* Header */
+.admin-hdr{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--border);height:var(--hdr);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;}
+.hdr-brand{display:flex;align-items:center;gap:.6rem;}
+.hdr-logo{font-family:'Bowlby One SC',sans-serif;font-size:1.2rem;letter-spacing:2px;color:var(--gold);}
+.hdr-badge{font-size:.62rem;background:rgba(212,160,23,.15);color:var(--gold);border:1px solid rgba(212,160,23,.3);padding:.15rem .45rem;border-radius:4px;font-family:Oswald,sans-serif;letter-spacing:1px;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:.75rem;}
+.hdr-clock{font-family:Oswald,sans-serif;font-size:.95rem;color:var(--text2);}
+.hdr-logout{background:none;border:1px solid var(--border);color:var(--text3);padding:.35rem .75rem;border-radius:8px;font-size:.72rem;font-family:Inter,sans-serif;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;transition:all .2s;}
+.hdr-logout:hover{border-color:var(--text2);color:var(--text2);}
+
+/* Tab nav */
+.tab-nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:var(--hdr);z-index:49;}
+.tab-btn{flex:1;background:none;border:none;color:var(--text3);padding:.9rem .5rem;font-family:Oswald,sans-serif;font-size:.88rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.45rem;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-btn .cnt-badge{background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:.62rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;}
+
+/* Tab content */
+.tab-content{display:none;padding:1rem;flex:1;}
+.tab-content.active{display:block;}
+
+/* ── PEDIDOS TAB ── */
+.pedidos-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;}
+.pedidos-filter{display:flex;gap:.35rem;flex-wrap:wrap;}
+.filter-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text3);padding:.35rem .75rem;border-radius:8px;font-size:.73rem;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;letter-spacing:.3px;}
+.filter-btn.active{background:rgba(212,160,23,.12);border-color:var(--gold);color:var(--gold);}
+.btn-clear{background:rgba(232,93,93,.1);border:1px solid rgba(232,93,93,.25);color:var(--red);padding:.35rem .75rem;border-radius:8px;font-size:.73rem;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.btn-clear:hover{background:rgba(232,93,93,.2);}
+.orders-list{display:flex;flex-direction:column;gap:.65rem;}
+.order-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s;}
+.order-card.status-nuevo{border-left:3px solid var(--red);}
+.order-card.status-en-cocina{border-left:3px solid var(--amber);}
+.order-card.status-listo{border-left:3px solid var(--blue);}
+.order-card.status-entregado{border-left:3px solid var(--green);opacity:.65;}
+.order-hd{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem .5rem;gap:.5rem;flex-wrap:wrap;}
+.order-id{font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;letter-spacing:.5px;}
+.order-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.order-time{font-size:.72rem;color:var(--text3);}
+.order-where{font-size:.72rem;background:var(--bg3);padding:.18rem .55rem;border-radius:5px;color:var(--text2);}
+.order-pay{font-size:.67rem;color:var(--text3);}
+.status-pill{font-family:Oswald,sans-serif;font-size:.65rem;font-weight:700;letter-spacing:1px;padding:.2rem .55rem;border-radius:5px;text-transform:uppercase;white-space:nowrap;}
+.pill-nuevo{background:rgba(232,93,93,.15);color:var(--red);}
+.pill-en-cocina{background:rgba(245,158,11,.15);color:var(--amber);}
+.pill-listo{background:rgba(91,141,238,.15);color:var(--blue);}
+.pill-entregado{background:rgba(76,175,80,.15);color:var(--green);}
+.order-items{padding:.25rem 1rem .6rem;border-bottom:1px solid var(--border);}
+.order-item-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.25rem 0;font-size:.8rem;gap:.5rem;}
+.order-item-nm{color:var(--text2);}
+.order-item-pr{color:var(--gold);font-family:Oswald,sans-serif;font-size:.85rem;font-weight:600;white-space:nowrap;}
+.order-item-mod{font-size:.68rem;color:var(--text3);margin-top:.1rem;}
+.order-ft{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;gap:.5rem;flex-wrap:wrap;}
+.order-total{font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;color:var(--gold);}
+.status-btns{display:flex;gap:.35rem;flex-wrap:wrap;}
+.st-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text3);padding:.35rem .75rem;border-radius:8px;font-size:.72rem;font-family:Inter,sans-serif;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.st-btn:hover{border-color:var(--text2);color:var(--text);}
+.st-btn.st-cocina:hover{border-color:var(--amber);color:var(--amber);}
+.st-btn.st-listo:hover{border-color:var(--blue);color:var(--blue);}
+.st-btn.st-entregado:hover{border-color:var(--green);color:var(--green);}
+.st-btn.st-delete:hover{border-color:var(--red);color:var(--red);}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;gap:.65rem;text-align:center;}
+.empty-ico{font-size:2.5rem;}
+.empty-msg{font-family:Oswald,sans-serif;font-size:1.1rem;color:var(--text2);}
+.empty-sub{font-size:.8rem;color:var(--text3);}
+
+/* ── CARTA TAB ── */
+.carta-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.5rem;}
+.seg-ctrl{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.seg-btn{background:none;border:none;color:var(--text3);padding:.45rem .9rem;font-family:Oswald,sans-serif;font-size:.82rem;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .2s;}
+.seg-btn.active{background:rgba(212,160,23,.15);color:var(--gold);}
+.btn-add-item{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.45rem 1rem;border-radius:9px;font-family:Oswald,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;gap:.35rem;white-space:nowrap;transition:opacity .2s;}
+.btn-add-item:hover{opacity:.88;}
+.carta-list{display:flex;flex-direction:column;gap:.5rem;}
+.carta-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:.75rem;padding:.75rem;transition:border-color .2s;}
+.carta-item:hover{border-color:var(--text3);}
+.ci-thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
+.ci-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.ci-info{flex:1;min-width:0;}
+.ci-name{font-family:Oswald,sans-serif;font-size:.9rem;font-weight:600;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-dc{font-size:.7rem;color:var(--text3);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-pr{font-family:Oswald,sans-serif;font-size:.85rem;font-weight:700;color:var(--gold);margin-top:.15rem;}
+.ci-btns{display:flex;gap:.35rem;flex-shrink:0;}
+.ci-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text3);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.ci-btn.edit:hover{border-color:var(--gold);color:var(--gold);}
+.ci-btn.del:hover{background:rgba(232,93,93,.12);border-color:var(--red);color:var(--red);}
+
+/* ── STOCK TAB ── */
+.stock-section-title{font-family:Oswald,sans-serif;font-size:.78rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
+.stock-list{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem;}
+.stock-item{background:var(--bg2);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;transition:border-color .2s;}
+.stock-item.out-of-stock{opacity:.6;}
+.si-emoji{font-size:1.4rem;flex-shrink:0;}
+.si-info{flex:1;min-width:0;}
+.si-name{font-family:Oswald,sans-serif;font-size:.88rem;font-weight:600;letter-spacing:.3px;}
+.si-pr{font-size:.72rem;color:var(--text3);margin-top:.1rem;}
+.si-status{font-size:.68rem;margin-top:.15rem;}
+.si-status.avail{color:var(--green);}
+.si-status.out{color:var(--red);}
+/* Toggle switch */
+.toggle-wrap{flex-shrink:0;}
+.toggle{position:relative;width:44px;height:24px;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .25s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:all .25s;}
+.toggle input:checked+.toggle-slider{background:rgba(76,175,80,.2);border-color:var(--green);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:var(--green);}
+
+/* ── EDIT MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.active{opacity:1;pointer-events:all;}
+.edit-modal{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:20px 20px 0 0;z-index:201;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto;}
+.edit-modal.active{transform:translateY(0);}
+.modal-drag{width:40px;height:4px;border-radius:2px;background:var(--border);margin:1rem auto .5rem;}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1.25rem .75rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:Oswald,sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.5px;}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--text3);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.modal-close:hover{color:var(--text);}
+.form-body{padding:1rem 1.25rem 2rem;display:flex;flex-direction:column;gap:.85rem;}
+.form-row{display:flex;gap:.65rem;}
+.form-group{display:flex;flex-direction:column;gap:.35rem;flex:1;}
+.form-label{font-size:.72rem;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
+.form-input{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:.7rem .9rem;font-size:.88rem;color:var(--text);width:100%;outline:none;transition:border-color .2s;font-family:Inter,sans-serif;}
+.form-input:focus{border-color:var(--gold);}
+.form-input::placeholder{color:var(--text3);}
+.form-preview{width:100%;height:100px;border-radius:9px;overflow:hidden;background:var(--bg3);margin-top:.35rem;}
+.form-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+.btn-save{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.9rem;border-radius:12px;font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+.btn-save:hover{opacity:.88;}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.65rem 1.25rem;border-radius:50px;font-size:.82rem;z-index:300;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.new-order-ping{position:fixed;top:calc(var(--hdr) + var(--tabnav) + .75rem);right:.75rem;background:var(--bg2);border:1px solid var(--red);border-radius:12px;padding:.6rem 1rem;z-index:100;display:flex;align-items:center;gap:.5rem;font-size:.8rem;box-shadow:0 4px 20px rgba(0,0,0,.5);transform:translateX(120%);transition:transform .35s cubic-bezier(.4,0,.2,1);}
+.new-order-ping.show{transform:translateX(0);}
+.ping-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+/* ── ORDER CARD REDESIGN ── */
+.order-hd{display:flex;align-items:flex-start;justify-content:space-between;padding:.7rem 1rem .4rem;gap:.5rem;}
+.order-hd-left{display:flex;flex-direction:column;gap:.2rem;}
+.order-hd-right{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;}
+.order-subhd{display:flex;align-items:center;justify-content:space-between;padding:.2rem 1rem .5rem;gap:.5rem;}
+.order-time{font-size:.7rem;color:var(--text3);}
+.order-timer{font-family:Oswald,sans-serif;font-size:.8rem;font-weight:600;letter-spacing:.3px;}
+.timer-ok{color:var(--green);}
+.timer-warn{color:var(--amber);}
+.timer-alert{color:var(--red);}
+.pay-badge{font-size:.68rem;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.5px;padding:.18rem .55rem;border-radius:5px;text-transform:uppercase;}
+.pay-cash{background:rgba(76,175,80,.15);color:var(--green);}
+.pay-mp{background:rgba(0,160,230,.15);color:#009fe3;}
+.pay-card{background:rgba(139,92,246,.15);color:#8b5cf6;}
+.pay-unknown{background:rgba(255,255,255,.08);color:var(--text2);}
+.pref-label{font-size:.6rem;font-family:Oswald,sans-serif;letter-spacing:1px;color:var(--amber);text-transform:uppercase;margin-top:.35rem;margin-bottom:.15rem;font-weight:600;}
+.order-mod-pref{font-size:.72rem;color:var(--text2);padding:.1rem 0;line-height:1.4;}
+
+/* ── STATS TAB ── */
+.stats-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1.25rem;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.85rem .75rem;text-align:center;}
+.stat-val{font-family:'Bowlby One SC',sans-serif;font-size:1.3rem;color:var(--gold);letter-spacing:1px;margin-bottom:.2rem;}
+.stat-val.small{font-size:.95rem;}
+.stat-lbl{font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.stats-section-title{font-family:'Bowlby One SC',sans-serif;font-size:.85rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:.5rem 0 .6rem;border-bottom:1px solid var(--border);margin-bottom:.6rem;}
+.stats-ranking{display:flex;flex-direction:column;gap:.4rem;}
+.rank-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:.65rem;padding:.6rem .85rem;}
+.rank-num{font-family:'Bowlby One SC',sans-serif;font-size:.9rem;color:var(--text3);min-width:20px;text-align:center;}
+.rank-num-gold{color:var(--gold);}
+.rank-emoji{font-size:1.2rem;flex-shrink:0;}
+.rank-name{font-family:Oswald,sans-serif;font-size:.85rem;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-right{display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;flex-shrink:0;}
+.rank-count{font-family:'Bowlby One SC',sans-serif;font-size:.9rem;color:var(--gold);}
+.rank-rev{font-size:.65rem;color:var(--text3);}
+.stats-empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:.85rem;}
+</style></head><body>
+
+<!-- ══ PIN SCREEN ══ -->
+<div id="pin-screen">
+  <div class="pin-card">
+    <div class="pin-logo">Inmigrante</div>
+    <div class="pin-sub">Panel de Administración</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key zero" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">&#9003;</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN APP ══ -->
+<div id="admin-app">
+  <header class="admin-hdr">
+    <div class="hdr-brand">
+      <div class="hdr-logo">Inmigrante</div>
+      <div class="hdr-badge">Admin</div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-clock" id="clock">--:--</div>
+      <button class="hdr-logout" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" id="tbtn-pedidos" onclick="switchTab('pedidos')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Pedidos<span class="cnt-badge" id="badge-pedidos" style="display:none">0</span>
+    </button>
+    <button class="tab-btn" id="tbtn-carta" onclick="switchTab('carta')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      Carta
+    </button>
+    <button class="tab-btn" id="tbtn-stock" onclick="switchTab('stock')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+      Stock
+    </button>
+    <button class="tab-btn" id="tbtn-stats" onclick="switchTab('stats')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Stats
+    </button>
+  </nav>
+
+  <!-- PEDIDOS -->
+  <div class="tab-content active" id="tab-pedidos">
+    <div class="pedidos-toolbar">
+      <div class="pedidos-filter">
+        <button class="filter-btn active" id="flt-all" onclick="setFilter('all')">Todos</button>
+        <button class="filter-btn" id="flt-nuevo" onclick="setFilter('nuevo')">Nuevos</button>
+        <button class="filter-btn" id="flt-en-cocina" onclick="setFilter('en-cocina')">En cocina</button>
+        <button class="filter-btn" id="flt-listo" onclick="setFilter('listo')">Listos</button>
+        <button class="filter-btn" id="flt-entregado" onclick="setFilter('entregado')">Entregados</button>
+      </div>
+      <button class="btn-clear" onclick="clearEntregados()">Limpiar entregados</button>
+    </div>
+    <div class="orders-list" id="orders-list"></div>
+  </div>
+
+  <!-- CARTA -->
+  <div class="tab-content" id="tab-carta">
+    <div class="carta-toolbar">
+      <div class="seg-ctrl">
+        <button class="seg-btn active" id="seg-comidas" onclick="setCarta('comidas')">Comidas</button>
+        <button class="seg-btn" id="seg-bebidas" onclick="setCarta('bebidas')">Bebidas</button>
+      </div>
+      <button class="btn-add-item" onclick="openEditModal(null,cartaSeg)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar ítem
+      </button>
+    </div>
+    <div class="carta-list" id="carta-list"></div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="tab-content" id="tab-stock">
+    <div id="stock-content"></div>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="tab-content" id="tab-stats">
+    <div id="stats-content"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="overlay" id="overlay" onclick="closeEditModal()"></div>
+<div class="edit-modal" id="edit-modal">
+  <div class="modal-drag"></div>
+  <div class="modal-hd">
+    <div class="modal-title" id="modal-title-txt">Nuevo ítem</div>
+    <button class="modal-close" onclick="closeEditModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="form-body" id="form-body"></div>
+</div>
+
+<!-- New order ping -->
+<div class="new-order-ping" id="ping">
+  <div class="ping-dot"></div>
+  <span>¡Nuevo pedido!</span>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ DEFAULTS — will be overridden by localStorage if bar-app has custom data ══ */
+var DEF_MENU=[
+  {id:1,cat:'ENTRADAS',e:'\u{1F95F}',n:'Empanada de Carne',dc:'3 unidades',pr:11500,img:'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:2,cat:'ENTRADAS',e:'\u{1F9C6}',n:'Buñuelos de Espinaca',dc:'Con crema de hierbas',pr:11500,img:''},
+  {id:3,cat:'ENTRADAS',e:'\u{1F373}',n:'Tortilla de Papa',dc:'Con jamón crudo y rúcula — individual',pr:11200,img:''},
+  {id:4,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Provoleta Fundida',dc:'Con tomates secos y aceite de albahaca',pr:14800,img:'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:5,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas Fritas',dc:'',pr:11500,img:'https://images.unsplash.com/photo-1573080496219-bb964701c815?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:6,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas con Cheddar y Verdeo',dc:'Sin panceta',pr:14000,img:''},
+  {id:7,cat:'ENTRADAS',e:'\u{1F360}',n:'Batatas Fritas',dc:'',pr:11500,img:''},
+  {id:8,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Degustación de Quesos',dc:'',pr:17000,img:''},
+  {id:9,cat:'ENTRADAS',e:'\u{1F991}',n:'Porción de Rabas',dc:'Con alioli',pr:28000,img:''},
+  {id:10,cat:'ENTRADAS',e:'\u{1F364}',n:'Langostinos Rebozados',dc:'Con aderezo de pimientos',pr:22000,img:''},
+  {id:11,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas Inmigrante',dc:'Fritas, cheddar, pulled bondiola y cebolla caramelizada',pr:16000,img:'https://images.unsplash.com/photo-1573080496219-bb964701c815?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:12,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Bastones de Muzzarella x4',dc:'Con salsa marinara',pr:11500,img:''},
+  {id:13,cat:'PICADAS PARA COMPARTIR',e:'\u{1F37D}',n:'Tabla de Campo',dc:'Quesos, fiambres, pan, nueces y cherry — para 2',pr:48000,img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:14,cat:'PICADAS PARA COMPARTIR',e:'\u{1F957}',n:'Picada Inmigrante',dc:'Croquetas de bondiola, bastones de mozzarella, pollo crocante, papas y 3 salsas',pr:34000,img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:15,cat:'ENSALADAS',e:'\u{1F957}',n:'Caesar',dc:'Hojas verdes, croutons, panceta crocante y pollo a la plancha',pr:18600,img:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:16,cat:'ENSALADAS',e:'\u{1F957}',n:'Inmigrante',dc:'Rúcula, cherry, queso azul, nueces y peras grilladas con reducción balsámica',pr:18600,img:''},
+  {id:17,cat:'ENSALADAS',e:'\u{1F957}',n:'Vegetariana',dc:'Hojas verdes, vegetales asados, cebolla encurtida y tomate',pr:18600,img:''},
+  {id:18,cat:'ENSALADAS',e:'\u{1F957}',n:'Italiana',dc:'Hojas verdes, queso rallado, tomates secos, albahaca y aceitunas',pr:18600,img:''},
+  {id:19,cat:'PLATOS PRINCIPALES',e:'\u{1F416}',n:'Matambre de Cerdo XL',dc:'A la pizza con papas rejilla — para compartir',pr:57000,img:''},
+  {id:20,cat:'PLATOS PRINCIPALES',e:'\u{1F969}',n:'Bondiola',dc:'Cocción baja temperatura con puré de toffee',pr:23000,img:'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:21,cat:'PLATOS PRINCIPALES',e:'\u{1F41F}',n:'Lomo de Salmón Grillado',dc:'Con crema de champiñón, chips de batata y ensalada de mar',pr:35000,img:'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:22,cat:'PLATOS PRINCIPALES',e:'\u{1F969}',n:'Bife de Chorizo',dc:'A la riojana',pr:33000,img:'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:23,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino de Calabaza',dc:'Con salsa de champiñón y verdeo',pr:23500,img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:24,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino de Jamón y Queso',dc:'Con filetto, crema o mixta',pr:25000,img:''},
+  {id:25,cat:'PASTAS',e:'\u{1F35D}',n:'Ravioles de Verdura',dc:'Con salsa bechamel',pr:26000,img:''},
+  {id:26,cat:'PASTAS',e:'\u{1F35D}',n:'Fetuccini',dc:'Con pesto de tomates secos',pr:21000,img:''},
+  {id:27,cat:'PASTAS',e:'\u{1F35D}',n:'Ñoquis',dc:'Con bolognesa',pr:21000,img:''},
+  {id:28,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino Negro de Salmón',dc:'Con salsa de crema de salvia',pr:28500,img:''},
+  {id:29,cat:'PASTAS',e:'\u{1F35D}',n:'Lasagna para 2',dc:'Pollo, espinaca, jamón y mozzarella con bolognesa',pr:40000,img:''},
+  {id:30,cat:'MILANESAS',e:'\u{1F357}',n:'Milanesa de Pollo',dc:'Con cremoso de cabutia y papas fritas o ensalada',pr:18000,img:''},
+  {id:31,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Napo XXL',dc:'Salsa fileto, muzzarella y tomates con papas fritas',pr:41000,img:''},
+  {id:32,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Rex XXL',dc:'Cheddar, barbacoa, panceta y verdeo con papas fritas',pr:44000,img:''},
+  {id:33,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Conte di Savoia XXL',dc:'Crema, mozzarella, sardo y espinaca con papas fritas',pr:44000,img:''},
+  {id:34,cat:'MILANESAS',e:'\u{1F357}',n:'Mila a la Suiza',dc:'Con cremoso de cabutia o papas fritas',pr:22000,img:''},
+  {id:35,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa de Carne XXL',dc:'Acompañada de papas fritas',pr:41000,img:''},
+  {id:36,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa a Caballo XXL',dc:'Con huevos y papas fritas',pr:45000,img:''},
+  {id:37,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Napolitana XXL',dc:'Con papas fritas',pr:47000,img:''},
+  {id:38,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Inmigrante XXL',dc:'Mozzarella, salsa fileto, panceta y huevo con papas fritas',pr:49000,img:'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:39,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'Cheeseburger',dc:'Doble medallón, cheddar, ketchup y cebolla',pr:17500,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:40,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'La Clásica',dc:'Medallón, lechuga, tomate, cheddar, pickles y mil islas',pr:15000,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:41,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'XXL Platense',dc:'Medallón 24cm, aros de cebolla, panceta, barbacoa y cheddar — para 4',pr:45000,img:''},
+  {id:42,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'Inmigrante',dc:'Doble medallón, cuádruple cheddar, bacon jam y cebolla crocante',pr:21500,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:43,cat:'HAMBURGUESAS',e:'\u{1F96C}',n:'Veggie',dc:'Medallón vegano, cheddar vegano y salsa de zanahoria sin lactosa',pr:14500,img:''},
+  {id:44,cat:'SANDWICHES',e:'\u{1F96A}',n:'Pollo Crispy',dc:'Pan papa, pollo crocante, rúcula, panceta y mayo de albahaca',pr:16000,img:'https://images.unsplash.com/photo-1562802378-063ec186a863?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:45,cat:'SANDWICHES',e:'\u{1F96A}',n:'Bondiola Braseada',dc:'Ciabatta, bondiola braseada, coleslaw, cheddar y papas de batata',pr:20000,img:''},
+  {id:46,cat:'SANDWICHES',e:'\u{1F96A}',n:'Ternera Braseada',dc:'Ciabatta, ternera braseada y pimientos y cebolla encurtidos',pr:22500,img:''},
+  {id:47,cat:'SANDWICHES',e:'\u{1F96C}',n:'Ciabatta Veggie',dc:'Falafel, lechuga, tomate, coleslaw y papas fritas',pr:15000,img:''},
+  {id:48,cat:'PIZZAS',e:'\u{1F355}',n:'4 Quesos',dc:'',pr:20000,img:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:49,cat:'PIZZAS',e:'\u{1F355}',n:'Especial',dc:'Muzzarella, jamón y morrón',pr:17000,img:''},
+  {id:50,cat:'PIZZAS',e:'\u{1F355}',n:'Jamón Crudo y Rúcula',dc:'Con queso parmesano',pr:19000,img:''},
+  {id:51,cat:'PIZZAS',e:'\u{1F355}',n:'Champiñón y Verdeo',dc:'',pr:19000,img:''},
+  {id:52,cat:'PIZZAS',e:'\u{1F355}',n:'Margarita',dc:'Muzzarella, cherry y aceite de albahaca',pr:17000,img:''},
+  {id:53,cat:'PIZZAS',e:'\u{1F355}',n:'Muzzarella',dc:'',pr:15500,img:''},
+  {id:54,cat:'PIZZAS',e:'\u{1F355}',n:'Inmigrante',dc:'Muzzarella, panceta, verdeo y huevos a la plancha',pr:19000,img:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:55,cat:'PIZZAS',e:'\u{1F355}',n:'Fugazzeta',dc:'Muzzarella, cebolla y aceitunas negras',pr:17000,img:''},
+  {id:56,cat:'PIZZAS',e:'\u{1F355}',n:'Vegetariana',dc:'Mozzarella con vegetales asados y emulsión de zanahoria',pr:17000,img:''},
+  {id:57,cat:'POSTRES',e:'\u{1F36E}',n:'Flan',dc:'Con dulce de leche, crema o mixto',pr:5500,img:''},
+  {id:58,cat:'POSTRES',e:'\u{1F368}',n:'Copa Helado Oreo',dc:'Tres bochas con Oreo',pr:6000,img:''},
+  {id:59,cat:'POSTRES',e:'\u{1F368}',n:'Copa de Helado',dc:'2 bochas a elección',pr:5000,img:''},
+  {id:60,cat:'POSTRES',e:'\u{1F368}',n:'Copa Inmigrante',dc:'2 bochas, brownie, nueces y charlotte de chocolate',pr:9000,img:''},
+  {id:61,cat:'POSTRES',e:'\u{1F36B}',n:'Volcán de Chocolate',dc:'',pr:7200,img:''},
+  {id:62,cat:'POSTRES',e:'\u{1F96E}',n:'Tiramisú Inmigrante',dc:'Con licor de Baileys Irish Cream',pr:7400,img:''},
+  {id:63,cat:'POSTRES',e:'\u{1F370}',n:'Chocotorta',dc:'',pr:7400,img:''},
+  {id:64,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake de Frutos Rojos',dc:'',pr:7400,img:''},
+  {id:65,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake de Maracuyá',dc:'',pr:7400,img:''},
+  {id:66,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake Oreo',dc:'',pr:7400,img:''}
+];
+var DEF_DRINKS=[
+  {id:101,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Agua sin Gas',dc:'500 cc',pr:4000,img:'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:102,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Agua con Gas',dc:'500 cc',pr:4000,img:''},
+  {id:103,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Sifón de Soda',dc:'650 cc',pr:4500,img:''},
+  {id:104,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F964}',n:'Gaseosas',dc:'Línea Coca-Cola — 350 cc',pr:4000,img:'https://images.unsplash.com/photo-1566657817181-c69e4a8eeb1e?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:105,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F964}',n:'Gaseosas',dc:'Línea Coca-Cola — 500 cc',pr:4500,img:''},
+  {id:106,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Aguas Saborizadas',dc:'Aquarius',pr:4500,img:''},
+  {id:107,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34B}',n:'Vaso de Limonada',dc:'',pr:5000,img:'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:108,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34B}',n:'Jarra de Limonada',dc:'Rinde 2½ vasos',pr:9000,img:''},
+  {id:109,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F33F}',n:'Vaso Menta y Jengibre',dc:'',pr:5300,img:''},
+  {id:110,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F33F}',n:'Jarra Menta y Jengibre',dc:'Rinde 2½ vasos',pr:9500,img:''},
+  {id:111,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Exprimido de Naranja',dc:'',pr:5000,img:'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:112,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Jarra de Exprimido',dc:'',pr:9500,img:''},
+  {id:113,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Vaso Naranja y Maracuyá',dc:'',pr:5000,img:''},
+  {id:114,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Jarra Naranja y Maracuyá',dc:'',pr:9500,img:''},
+  {id:201,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Aperol Spritz',dc:'',pr:8500,img:''},
+  {id:202,cat:'COCTELERÍA CLÁSICA',e:'\u{1F943}',n:'Black Label',dc:'Medida',pr:10000,img:''},
+  {id:203,cat:'COCTELERÍA CLÁSICA',e:'\u{1F943}',n:'Red Label',dc:'Medida',pr:10000,img:''},
+  {id:204,cat:'COCTELERÍA CLÁSICA',e:'\u{1F34B}',n:'Caipirinha',dc:'',pr:8500,img:'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:205,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Caipiroska',dc:'',pr:8500,img:''},
+  {id:206,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Caipirissima',dc:'',pr:8000,img:''},
+  {id:207,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Campari',dc:'',pr:7500,img:''},
+  {id:208,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Cosmopolitan',dc:'',pr:8600,img:''},
+  {id:209,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cuba Libre',dc:'',pr:7500,img:''},
+  {id:210,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cynar',dc:'',pr:7000,img:''},
+  {id:211,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cynar Julep',dc:'',pr:7500,img:''},
+  {id:212,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Destornillador',dc:'',pr:7500,img:''},
+  {id:213,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Fernet',dc:'',pr:7500,img:'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:214,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Ferroviario',dc:'',pr:7500,img:''},
+  {id:215,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gancia',dc:'',pr:7200,img:''},
+  {id:216,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gancia Batido',dc:'',pr:7500,img:''},
+  {id:217,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gin Tonic',dc:'',pr:7600,img:''},
+  {id:218,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Malibú',dc:'',pr:7500,img:''},
+  {id:219,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Margarita Frozen',dc:'',pr:8600,img:''},
+  {id:220,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Mojito Clásico',dc:'',pr:7500,img:''},
+  {id:221,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Negroni',dc:'',pr:8600,img:''},
+  {id:301,cat:'COCTELERÍA DE AUTOR',e:'\u{1F338}',n:'Tónico Herbolareo',dc:'',pr:6000,img:''},
+  {id:302,cat:'COCTELERÍA DE AUTOR',e:'\u{1F377}',n:'Destello de Vid',dc:'',pr:6000,img:''},
+  {id:303,cat:'COCTELERÍA DE AUTOR',e:'\u{1F30A}',n:'Caribbean Blue',dc:'',pr:10000,img:''},
+  {id:304,cat:'COCTELERÍA DE AUTOR',e:'\u{1F943}',n:'Old Fashioned',dc:'',pr:9000,img:''},
+  {id:305,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Ginmigrante',dc:'',pr:8800,img:''},
+  {id:306,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Hormiga Negra',dc:'',pr:8500,img:''},
+  {id:307,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Gin Bill',dc:'',pr:8800,img:''},
+  {id:308,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Chiquito',dc:'',pr:8500,img:''},
+  {id:309,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Vita di Aperol',dc:'',pr:8600,img:''},
+  {id:401,cat:'VINOS',e:'\u{1F377}',n:'Copa de Vino',dc:'Malbec o Blanco Dulce',pr:6000,img:'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:402,cat:'VINOS',e:'\u{1F377}',n:'Amalaya Blanco Dulce',dc:'Botella',pr:17000,img:''},
+  {id:403,cat:'VINOS',e:'\u{1F377}',n:'Pispi',dc:'Botella',pr:21000,img:''},
+  {id:404,cat:'VINOS',e:'\u{1F377}',n:'Chico Malo',dc:'Botella',pr:13000,img:''},
+  {id:405,cat:'VINOS',e:'\u{1F377}',n:'Otro Loco Más',dc:'Botella',pr:14500,img:''},
+  {id:406,cat:'VINOS',e:'\u{1F377}',n:'Norton Elegido Malbec',dc:'Botella',pr:14000,img:''},
+  {id:407,cat:'VINOS',e:'\u{1F377}',n:'Benjamin Chardonnay',dc:'Botella',pr:15000,img:''},
+  {id:408,cat:'VINOS',e:'\u{1F37E}',n:'Novecento Extra Brut',dc:'Botella',pr:14000,img:''},
+  {id:409,cat:'VINOS',e:'\u{1F377}',n:'Trumpeter Malbec',dc:'Botella',pr:22000,img:''},
+  {id:410,cat:'VINOS',e:'\u{1F377}',n:'Talisman',dc:'Botella',pr:18000,img:''},
+  {id:411,cat:'VINOS',e:'\u{1F377}',n:'Saint Felicien Cabernet',dc:'Botella',pr:18000,img:''},
+  {id:412,cat:'VINOS',e:'\u{1F377}',n:'Berrinche',dc:'Tempranillo / Syrah / Cabernet — Botella',pr:15000,img:''},
+  {id:413,cat:'VINOS',e:'\u{1F37E}',n:'Melodía Chardonnay Extra Brut',dc:'Botella',pr:17000,img:''},
+  {id:501,cat:'CANILLAS',e:'\u{1F37A}',n:'IPA',dc:'Mama Quilla',pr:6300,img:'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:502,cat:'CANILLAS',e:'\u{1F37A}',n:'Golden',dc:'Mama Quilla',pr:6300,img:''},
+  {id:503,cat:'CANILLAS',e:'\u{1F37A}',n:'Cream Ale',dc:'Mama Quilla',pr:6300,img:''},
+  {id:504,cat:'CANILLAS',e:'\u{1F37A}',n:'Kolsh',dc:'Mama Quilla',pr:6300,img:''},
+  {id:505,cat:'CANILLAS',e:'\u{1F37A}',n:'Honey',dc:'Mama Quilla',pr:6300,img:''},
+  {id:506,cat:'CANILLAS',e:'\u{1F37A}',n:'Porter',dc:'Mama Quilla',pr:6300,img:''},
+  {id:507,cat:'CANILLAS',e:'\u{1F37A}',n:'Scottish',dc:'Mama Quilla',pr:6300,img:''},
+  {id:508,cat:'CANILLAS',e:'\u{1F37A}',n:'APA',dc:'Mama Quilla',pr:6300,img:''},
+  {id:509,cat:'CANILLAS',e:'\u{1F37A}',n:'NEIPA',dc:'Mama Quilla',pr:6300,img:''},
+  {id:510,cat:'CANILLAS',e:'\u{1F37A}',n:'Stella Porrón',dc:'',pr:6000,img:''},
+  {id:511,cat:'CANILLAS',e:'\u{1F37A}',n:'Stella Sin Alcohol',dc:'',pr:6000,img:''},
+  {id:512,cat:'CANILLAS',e:'\u{1F37A}',n:'Porrón Cerveza Roja',dc:'Sin TACC',pr:7000,img:''},
+  {id:513,cat:'CANILLAS',e:'\u{1F37A}',n:'Porrón IPA',dc:'Sin TACC',pr:7000,img:''},
+  {id:514,cat:'CANILLAS',e:'\u{1F37A}',n:'Michelob',dc:'Sin gluten',pr:6000,img:''},
+  {id:515,cat:'CANILLAS',e:'\u{1F379}',n:'Vermut',dc:'',pr:7000,img:''}
+];
+
+/* ══ STATE ══ */
+var PIN='1234';
+var pinBuf='';
+var orders=[];
+var adminMenu=[];
+var adminDrinks=[];
+var adminStock={};
+var orderFilter='all';
+var cartaSeg='comidas';
+var editTarget=null; // {type:'menu'|'drinks', id:number|null}
+var bc=null;
+
+/* ══ PIN LOGIC ══ */
+function pinPress(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d;
+  updateDots();
+  if(pinBuf.length===4)setTimeout(checkPin,120);
+}
+function pinDel(){pinBuf=pinBuf.slice(0,-1);updateDots();}
+function updateDots(){
+  for(var i=0;i<4;i++){
+    var dot=document.getElementById('pd'+i);
+    dot.classList.toggle('filled',i<pinBuf.length);
+    dot.classList.remove('err');
+  }
+}
+function checkPin(){
+  if(pinBuf===PIN){
+    document.getElementById('pin-screen').style.display='none';
+    document.getElementById('admin-app').classList.add('visible');
+    initAdmin();
+  }else{
+    for(var i=0;i<4;i++)document.getElementById('pd'+i).classList.add('err');
+    document.getElementById('pin-err').textContent='PIN incorrecto';
+    document.getElementById('pin-dots').classList.add('shaking');
+    setTimeout(function(){
+      document.getElementById('pin-dots').classList.remove('shaking');
+      for(var j=0;j<4;j++)document.getElementById('pd'+j).classList.remove('err','filled');
+      document.getElementById('pin-err').textContent='';
+      pinBuf='';
+    },700);
+  }
+}
+function logout(){
+  pinBuf='';updateDots();
+  document.getElementById('admin-app').classList.remove('visible');
+  document.getElementById('pin-screen').style.display='flex';
+}
+
+/* ══ INIT ══ */
+function initAdmin(){
+  adminMenu=JSON.parse(JSON.stringify(DEF_MENU));
+  adminDrinks=JSON.parse(JSON.stringify(DEF_DRINKS));
+  adminStock={};orders=[];
+  renderPedidos();renderCarta();renderStock();
+  startClock();
+  connectWS();
+}
+function tryParse(s,fb){try{return JSON.parse(s);}catch(e){return fb;}}
+function saveMenu(){wsSend({type:'menu-update',menu:adminMenu});}
+function saveDrinks(){wsSend({type:'drinks-update',drinks:adminDrinks});}
+function saveStock(){wsSend({type:'stock-update',stock:adminStock});}
+function saveOrders(){}  // server manages persistence
+
+/* ══ WEBSOCKET ══ */
+var ws,wsReady=false;
+function connectWS(){
+  var url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
+  try{
+    ws=new WebSocket(url);
+    ws.onopen=function(){wsReady=true;};
+    ws.onclose=function(){wsReady=false;setTimeout(connectWS,2000);};
+    ws.onerror=function(){};
+    ws.onmessage=function(ev){handleWSmsg(JSON.parse(ev.data));};
+  }catch(e){}
+}
+function wsSend(msg){if(ws&&ws.readyState===1)ws.send(JSON.stringify(msg));}
+function broadcast(msg){wsSend(msg);}
+function handleWSmsg(d){
+  if(d.type==='init'){
+    if(d.menu)adminMenu=d.menu;
+    if(d.drinks)adminDrinks=d.drinks;
+    if(d.stock)adminStock=d.stock||{};
+    if(d.orders)orders=d.orders;
+    renderPedidos();renderCarta();renderStock();updateOrderBadge();
+  }
+  if(d.type==='new-order'){orders.unshift(d.order);renderPedidos();updateOrderBadge();showPing();}
+  if(d.type==='menu-update'){adminMenu=d.menu;renderCarta();renderStock();}
+  if(d.type==='drinks-update'){adminDrinks=d.drinks;renderCarta();renderStock();}
+  if(d.type==='stock-update'){adminStock=d.stock;renderStock();}
+  if(d.type==='order-status'){var o=orders.find(function(x){return x.id===d.id;});if(o){o.status=d.status;renderPedidos();updateOrderBadge();}}
+  if(d.type==='order-delete'){orders=orders.filter(function(o){return o.id!==d.id;});renderPedidos();updateOrderBadge();}
+  if(d.type==='clear-entregados'){orders=orders.filter(function(o){return o.status!=='entregado';});renderPedidos();}
+}
+function showPing(){
+  var p=document.getElementById('ping');p.classList.add('show');
+  setTimeout(function(){p.classList.remove('show');},3500);
+  playBeep();
+}
+
+/* ══ ESTADÍSTICAS ══ */
+function renderStats(){
+  var el=document.getElementById('stats-content');
+  if(!orders.length){
+    el.innerHTML='<div class="stats-empty">No hay pedidos registrados todavía.</div>';
+    return;
+  }
+  var today=new Date().toDateString();
+  var todayOrders=orders.filter(function(o){return new Date(o.ts).toDateString()===today;});
+  var todayTotal=todayOrders.reduce(function(s,o){return s+o.total;},0);
+  var avgTicket=todayOrders.length?Math.round(todayTotal/todayOrders.length):0;
+  // Count all items across all history
+  var itemMap={};
+  orders.forEach(function(o){
+    o.items.forEach(function(i){
+      var key=i.n+(i.isDr?' (bebida)':'');
+      if(!itemMap[key]) itemMap[key]={name:key,e:i.e,count:0,revenue:0};
+      itemMap[key].count+=(i.isDr?(i.q||1):1);
+      itemMap[key].revenue+=i.pr;
+    });
+  });
+  var top=Object.values(itemMap).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  el.innerHTML=
+    '<div class="stats-cards">'+
+      '<div class="stat-card"><div class="stat-val">'+todayOrders.length+'</div><div class="stat-lbl">Pedidos hoy</div></div>'+
+      '<div class="stat-card"><div class="stat-val small">$'+todayTotal.toLocaleString('es-AR')+'</div><div class="stat-lbl">Ingresos hoy</div></div>'+
+      '<div class="stat-card"><div class="stat-val small">$'+avgTicket.toLocaleString('es-AR')+'</div><div class="stat-lbl">Ticket promedio</div></div>'+
+    '</div>'+
+    '<div class="stats-cards" style="margin-top:-.3rem">'+
+      '<div class="stat-card"><div class="stat-val">'+orders.length+'</div><div class="stat-lbl">Pedidos totales</div></div>'+
+      '<div class="stat-card"><div class="stat-val small">$'+orders.reduce(function(s,o){return s+o.total;},0).toLocaleString('es-AR')+'</div><div class="stat-lbl">Ingresos totales</div></div>'+
+      '<div class="stat-card"><div class="stat-val">'+Object.keys(itemMap).length+'</div><div class="stat-lbl">Ítems distintos</div></div>'+
+    '</div>'+
+    '<div class="stats-section-title">🏆 Top 15 más pedidos</div>'+
+    '<div class="stats-ranking">'+
+    top.map(function(item,idx){
+      var numClass=idx<3?'rank-num rank-num-gold':'rank-num';
+      var medal=idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':(idx+1);
+      return '<div class="rank-item">'+
+        '<span class="'+numClass+'">'+medal+'</span>'+
+        '<span class="rank-emoji">'+item.e+'</span>'+
+        '<span class="rank-name">'+item.name+'</span>'+
+        '<div class="rank-right"><span class="rank-count">×'+item.count+'</span><span class="rank-rev">$'+item.revenue.toLocaleString('es-AR')+'</span></div>'+
+      '</div>';
+    }).join('')+
+    '</div>';
+}
+
+/* ══ SOUND ══ */
+var _notifAudio=null;
+function playBeep(){
+  try{
+    if(!_notifAudio){_notifAudio=new Audio('notification.mp3');_notifAudio.volume=1;}
+    _notifAudio.currentTime=0;
+    _notifAudio.play();
+  }catch(e){}
+}
+
+/* ══ TIMER HELPERS ══ */
+function elapsedTime(ts){
+  var diff=Math.floor((Date.now()-ts)/1000);
+  if(diff<60) return '<1 min';
+  var m=Math.floor(diff/60);
+  if(m<60) return m+' min';
+  return Math.floor(m/60)+'h '+( m%60)+'m';
+}
+function timerClass(ts){
+  var m=Math.floor((Date.now()-ts)/1000/60);
+  if(m<10) return 'timer-ok';
+  if(m<20) return 'timer-warn';
+  return 'timer-alert';
+}
+
+/* ══ CLOCK ══ */
+function startClock(){
+  function tick(){
+    var now=new Date();
+    var h=String(now.getHours()).padStart(2,'0');
+    var m=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('clock').textContent=h+':'+m;
+  }
+  tick();setInterval(tick,15000);
+}
+
+/* ══ TAB SWITCHING ══ */
+function switchTab(name){
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('tbtn-'+name).classList.add('active');
+  if(name==='stats') renderStats();
+}
+
+/* ══ PEDIDOS ══ */
+function setFilter(f){
+  orderFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('flt-'+f).classList.add('active');
+  renderPedidos();
+}
+function updateOrderBadge(){
+  var n=orders.filter(function(o){return o.status==='nuevo'||o.status==='en-cocina';}).length;
+  var badge=document.getElementById('badge-pedidos');
+  if(n>0){badge.textContent=n;badge.style.display='flex';}
+  else{badge.style.display='none';}
+}
+function clearEntregados(){
+  orders=orders.filter(function(o){return o.status!=='entregado';});
+  wsSend({type:'clear-entregados'});
+  renderPedidos();toast('Pedidos entregados eliminados');
+}
+function setOrderStatus(id,status){
+  var o=orders.find(function(x){return x.id===id;});
+  if(!o)return;
+  o.status=status;
+  wsSend({type:'order-status',id:id,status:status});
+  renderPedidos();updateOrderBadge();
+  toast('Pedido '+id+' → '+status.replace('-',' '));
+}
+function deleteOrder(id){
+  orders=orders.filter(function(o){return o.id!==id;});
+  wsSend({type:'order-delete',id:id});
+  renderPedidos();updateOrderBadge();
+  toast('Pedido eliminado');
+}
+function fmtTime(ts){
+  var d=new Date(ts);
+  var h=String(d.getHours()).padStart(2,'0');
+  var m=String(d.getMinutes()).padStart(2,'0');
+  return h+':'+m;
+}
+function fmtDate(ts){
+  var d=new Date(ts);
+  var now=new Date();
+  if(d.toDateString()===now.toDateString())return 'Hoy '+fmtTime(ts);
+  return d.getDate()+'/'+(d.getMonth()+1)+' '+fmtTime(ts);
+}
+function renderPedidos(){
+  updateOrderBadge();
+  var el=document.getElementById('orders-list');
+  var list=orderFilter==='all'?orders:orders.filter(function(o){return o.status===orderFilter;});
+  if(!list.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-ico">📋</div><div class="empty-msg">'+(orderFilter==='all'?'Sin pedidos aún':'Sin pedidos en esta categoría')+'</div><div class="empty-sub">Los pedidos aparecen aquí en tiempo real</div></div>';
+    return;
+  }
+  var payLbl={mp:'Mercado Pago',card:'Tarjeta',cash:'Efectivo'};
+  var payBadge={mp:'pay-mp',card:'pay-card',cash:'pay-cash'};
+  var pills={nuevo:'pill-nuevo','en-cocina':'pill-en-cocina',listo:'pill-listo',entregado:'pill-entregado'};
+  var pillTxt={nuevo:'NUEVO','en-cocina':'EN COCINA',listo:'LISTO',entregado:'ENTREGADO'};
+  el.innerHTML=list.map(function(o){
+    var where=o.pickup?'🏠 Para retirar':(o.table?'🪑 Mesa '+o.table:'Sin mesa');
+    var elapsed=elapsedTime(o.ts);
+    var tClass=timerClass(o.ts);
+    var pay=o.pay||'cash';
+    var itemRows=o.items.map(function(i){
+      var prefs='';
+      if(!i.isDr){
+        if(i.remIng&&i.remIng.length) prefs+='<div class="pref-label">PREFERENCIAS</div><div class="order-mod-pref">🚫 Sin: '+i.remIng.join(', ')+'</div>';
+        if(i.exQ){Object.keys(i.exQ).forEach(function(k){if(i.exQ[k]>0) prefs+='<div class="order-mod-pref">➕ '+i.exQ[k]+'× '+k+'</div>';});}
+      }
+      return '<div class="order-item-row">'+
+        '<div><div class="order-item-nm">'+i.e+' '+(i.isDr?i.n+' ×'+i.q:i.n)+'</div>'+prefs+'</div>'+
+        '<div class="order-item-pr">$'+i.pr.toLocaleString('es-AR')+'</div>'+
+      '</div>';
+    }).join('');
+    var stBtns='';
+    if(o.status==='nuevo') stBtns='<button class="st-btn st-cocina" onclick="setOrderStatus(\''+o.id+'\',\'en-cocina\')">→ En cocina</button>';
+    if(o.status==='en-cocina') stBtns='<button class="st-btn st-listo" onclick="setOrderStatus(\''+o.id+'\',\'listo\')">→ Listo</button>';
+    if(o.status==='listo') stBtns='<button class="st-btn st-entregado" onclick="setOrderStatus(\''+o.id+'\',\'entregado\')">→ Entregado</button>';
+    stBtns+='<button class="st-btn st-delete" onclick="deleteOrder(\''+o.id+'\')">Borrar</button>';
+    return '<div class="order-card status-'+o.status+'">'+
+      '<div class="order-hd">'+
+        '<div class="order-hd-left">'+
+          '<span class="order-id">'+o.id+'</span>'+
+          '<span class="order-where">'+where+'</span>'+
+        '</div>'+
+        '<div class="order-hd-right">'+
+          '<span class="status-pill '+pills[o.status]+'">'+pillTxt[o.status]+'</span>'+
+          '<span class="order-timer '+tClass+'">⏱ '+elapsed+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="order-subhd">'+
+        '<span class="order-time">'+fmtDate(o.ts)+'</span>'+
+        '<span class="pay-badge '+(payBadge[pay]||'pay-unknown')+'">'+( payLbl[pay]||pay)+'</span>'+
+      '</div>'+
+      '<div class="order-items">'+itemRows+'</div>'+
+      '<div class="order-ft"><span class="order-total">$'+o.total.toLocaleString('es-AR')+'</span>'+
+      '<div class="status-btns">'+stBtns+'</div></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ══ CARTA ══ */
+function setCarta(seg){
+  cartaSeg=seg;
+  document.querySelectorAll('.seg-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('seg-'+seg).classList.add('active');
+  renderCarta();
+}
+function renderCarta(){
+  var list=cartaSeg==='comidas'?adminMenu:adminDrinks;
+  var el=document.getElementById('carta-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-ico">📝</div><div class="empty-msg">Sin ítems</div><div class="empty-sub">Agregá uno con el botón +</div></div>';
+    return;
+  }
+  var cats=[],seen={};
+  list.forEach(function(i){var c=i.cat||'General';if(!seen[c]){seen[c]=1;cats.push(c);}});
+  var editIco='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 3 3L12 15l-4 1 1-4z"/></svg>';
+  var delIco='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="m9 6 1-3h4l1 3"/></svg>';
+  el.innerHTML=cats.map(function(cat){
+    var items=list.filter(function(i){return (i.cat||'General')===cat;});
+    return '<div class="stock-section-title">'+cat+'</div>'+
+      items.map(function(item){
+        return '<div class="carta-item">'+
+          '<div class="ci-thumb"><img src="'+item.img+'" alt="" loading="lazy" onerror="this.parentElement.innerHTML=\''+item.e+'\'"></div>'+
+          '<div class="ci-info"><div class="ci-name">'+item.e+' '+item.n+'</div><div class="ci-dc">'+item.dc+'</div><div class="ci-pr">$'+item.pr.toLocaleString('es-AR')+'</div></div>'+
+          '<div class="ci-btns">'+
+            '<button class="ci-btn edit" onclick="openEditModal('+item.id+',\''+cartaSeg+'\')" title="Editar">'+editIco+'</button>'+
+            '<button class="ci-btn del" onclick="deleteItem('+item.id+',\''+cartaSeg+'\')" title="Eliminar">'+delIco+'</button>'+
+          '</div></div>';
+      }).join('');
+  }).join('');
+}
+function deleteItem(id,type){
+  if(!confirm('¿Eliminar este ítem del menú?'))return;
+  if(type==='comidas'){adminMenu=adminMenu.filter(function(i){return i.id!==id;});saveMenu();broadcast({type:'menu-update',menu:adminMenu});}
+  else{adminDrinks=adminDrinks.filter(function(i){return i.id!==id;});saveDrinks();broadcast({type:'drinks-update',drinks:adminDrinks});}
+  renderCarta();renderStock();toast('Ítem eliminado');
+}
+
+/* ══ EDIT MODAL ══ */
+function openEditModal(id,type){
+  editTarget={type:type,id:id};
+  var list=type==='comidas'?adminMenu:adminDrinks;
+  var item=id?list.find(function(i){return i.id===id;}):null;
+  document.getElementById('modal-title-txt').textContent=item?'Editar ítem':'Nuevo ítem';
+  var fb=document.getElementById('form-body');
+  var n=item?item.n:'';
+  var dc=item?item.dc:'';
+  var pr=item?item.pr:'';
+  var img=item?item.img:'';
+  var e=item?item.e:'🍽️';
+  fb.innerHTML=
+    '<div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="f-emoji" value="'+escH(e)+'" placeholder="🍔" maxlength="4"></div>'+
+    '<div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-name" value="'+escH(n)+'" placeholder="Nombre del plato"></div>'+
+    '<div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="f-dc" value="'+escH(dc)+'" placeholder="Breve descripción"></div>'+
+    '<div class="form-row">'+
+      '<div class="form-group"><label class="form-label">Precio ($)</label><input class="form-input" id="f-pr" type="number" value="'+escH(String(pr))+'" placeholder="0" min="0"></div>'+
+    '</div>'+
+    '<div class="form-group"><label class="form-label">URL de foto</label><input class="form-input" id="f-img" value="'+escH(img)+'" placeholder="https://images.unsplash.com/..." oninput="previewImg()">'+
+    '<div class="form-preview"><img id="f-preview" src="'+escH(img)+'" alt="" onerror="this.style.display=\'none\'" style="'+(img?'':'display:none')+'"></div></div>'+
+    '<button class="btn-save" onclick="saveItem()">Guardar</button>';
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('edit-modal').classList.add('active');
+}
+function previewImg(){
+  var src=document.getElementById('f-img').value;
+  var img=document.getElementById('f-preview');
+  img.src=src;img.style.display=src?'block':'none';
+}
+function closeEditModal(){
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('edit-modal').classList.remove('active');
+}
+function saveItem(){
+  var n=document.getElementById('f-name').value.trim();
+  var dc=document.getElementById('f-dc').value.trim();
+  var pr=parseInt(document.getElementById('f-pr').value)||0;
+  var img=document.getElementById('f-img').value.trim();
+  var e=document.getElementById('f-emoji').value.trim()||'🍽️';
+  if(!n){toast('El nombre es obligatorio');return;}
+  var type=editTarget.type;
+  var id=editTarget.id;
+  var list=type==='comidas'?adminMenu:adminDrinks;
+  if(id){
+    // edit existing
+    var item=list.find(function(i){return i.id===id;});
+    if(item){item.n=n;item.dc=dc;item.pr=pr;item.img=img;item.e=e;}
+  }else{
+    // new item
+    var newId=Date.now();
+    var newItem={id:newId,e:e,n:n,dc:dc,pr:pr,img:img};
+    if(type==='comidas'){newItem.ing=[];newItem.ex=[];}
+    list.push(newItem);
+  }
+  if(type==='comidas'){saveMenu();broadcast({type:'menu-update',menu:adminMenu});}
+  else{saveDrinks();broadcast({type:'drinks-update',drinks:adminDrinks});}
+  closeEditModal();renderCarta();renderStock();
+  toast(id?'Ítem actualizado':'Ítem agregado');
+}
+
+/* ══ STOCK ══ */
+function toggleStock(id){
+  var cur=adminStock[id];
+  // undefined / true → disponible; false → agotado
+  adminStock[id]=(cur===false)?true:false;
+  saveStock();
+  broadcast({type:'stock-update',stock:adminStock});
+  renderStock();
+}
+function renderStock(){
+  var el=document.getElementById('stock-content');
+  function buildItem(item){
+    var avail=adminStock[item.id]!==false;
+    return '<div class="stock-item'+(avail?'':' out-of-stock')+'">'+
+      '<div class="si-emoji">'+item.e+'</div>'+
+      '<div class="si-info"><div class="si-name">'+item.n+'</div><div class="si-pr">$'+item.pr.toLocaleString('es-AR')+'</div>'+
+      '<div class="si-status '+(avail?'avail':'out')+'">'+(avail?'✓ Disponible':'✗ Agotado')+'</div></div>'+
+      '<div class="toggle-wrap"><label class="toggle">'+
+        '<input type="checkbox"'+(avail?' checked':'')+' onchange="toggleStock('+item.id+')">'+
+        '<span class="toggle-slider"></span>'+
+      '</label></div></div>';
+  }
+  function buildSection(list,sectionTitle){
+    var cats=[],seen={};
+    list.forEach(function(i){var c=i.cat||'General';if(!seen[c]){seen[c]=1;cats.push(c);}});
+    return '<div class="stock-section-title" style="font-size:.9rem;color:var(--gold);margin-top:1rem">'+sectionTitle+'</div>'+
+      cats.map(function(cat){
+        var items=list.filter(function(i){return (i.cat||'General')===cat;});
+        return '<div class="stock-section-title" style="font-size:.72rem;margin-top:.5rem">'+cat+'</div>'+
+          '<div class="stock-list">'+items.map(buildItem).join('')+'</div>';
+      }).join('');
+  }
+  el.innerHTML=buildSection(adminMenu,'🍽 COMIDAS')+buildSection(adminDrinks,'🍹 BEBIDAS');
+}
+
+/* ══ UTILS ══ */
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+/* ══ START ══ */
+// Refresh timers every 30s (WS handles real-time order updates)
+setInterval(function(){
+  if(!document.getElementById('admin-app').classList.contains('visible'))return;
+  if(document.getElementById('tab-pedidos').classList.contains('active')) renderPedidos();
+},30000);
+</script>
+</body></html>

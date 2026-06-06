@@ -1,0 +1,724 @@
+﻿<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Inmigrante — Resto Bar</title><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bowlby+One+SC&family=Oswald:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#1f3b49;--bg2:#1a3240;--bg3:#162a36;--gold:#ecdcb9;--gold3:#c0aa82;--text:#ecdcb9;--text2:#a89e84;--text3:#5a5448;--border:#2a4f62;--red:#e85d5d;--green:#4caf50;--nav:65px;}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;overflow:hidden;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--gold3);border-radius:2px;}
+
+/* ── APP SHELL: screens isolated in fixed container ── */
+#app{position:fixed;top:0;left:0;right:0;bottom:var(--nav);overflow:hidden;}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:1.5rem;}
+.screen.active{display:block;}
+#success-screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* SCREEN HEADER */
+.screen-hd{display:flex;align-items:center;gap:.75rem;padding:1.1rem 1rem .5rem;position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--border);}
+.screen-title{font-family:'Bowlby One SC',sans-serif;font-size:1.3rem;font-weight:400;letter-spacing:1px;text-transform:uppercase;}
+.back-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text2);width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;text-decoration:none;}
+
+/* ── BOTTOM NAV (real <a> links) ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:.68rem;font-family:Inter,sans-serif;font-weight:500;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;transition:color .2s;}
+.nav-btn.active{color:var(--gold);}
+.nav-btn svg{transition:transform .2s;}
+.nav-btn.active svg{transform:scale(1.1);}
+
+/* ── FAB ── */
+.cart-fab{position:fixed;bottom:calc(var(--nav) + 12px);right:1rem;width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold3));border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(212,160,23,.4);z-index:49;text-decoration:none;transition:transform .2s;}
+.cart-fab:hover{transform:scale(1.08);}
+.cart-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:20px;height:20px;font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+/* ── DRINKS PROMPT BANNER ── */
+.drinks-prompt{background:linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.04));border:1px solid rgba(212,160,23,.3);border-radius:14px;margin:.75rem .75rem .25rem;padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
+.drinks-prompt-txt{font-family:Oswald,sans-serif;font-size:.95rem;color:var(--gold);letter-spacing:.5px;}
+.drinks-prompt-sub{font-size:.75rem;color:var(--text3);margin-top:.15rem;}
+.dp-skip{background:none;border:1px solid var(--border);color:var(--text3);padding:.45rem .85rem;border-radius:8px;font-size:.78rem;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none;transition:all .2s;}
+.dp-skip:hover{border-color:var(--text2);color:var(--text2);}
+
+/* ── MENU GRID ── */
+.menu-grid{display:block;}
+.cat-title{font-family:'Bowlby One SC',sans-serif;font-size:1.1rem;color:var(--gold);text-transform:uppercase;padding:.9rem 1rem .45rem;border-bottom:1px solid var(--border);margin-top:.1rem;letter-spacing:1px;text-align:center;}
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;padding:.75rem;}
+.menu-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s,transform .2s;}
+.menu-card:hover{transform:translateY(-2px);}
+.card-img{width:100%;height:145px;overflow:hidden;background:var(--bg3);}.card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s ease;}.menu-card:hover .card-img img{transform:scale(1.07);}
+.card-body{padding:.6rem .75rem .8rem;}
+.card-name{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;font-weight:400;letter-spacing:.5px;margin-bottom:.2rem;text-transform:uppercase;}
+.card-dc{font-size:.7rem;color:var(--text2);line-height:1.4;margin-bottom:.6rem;font-family:Oswald,sans-serif;font-weight:300;text-transform:uppercase;letter-spacing:.3px;}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:.3rem;}
+.card-pr{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;font-weight:400;color:var(--gold);}
+.card-btn-add{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:.38rem .7rem;border-radius:8px;font-size:.75rem;font-family:Inter,sans-serif;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.card-btn-add:hover{border-color:var(--gold3);color:var(--gold);}
+.card-btn-add.in-cart{background:rgba(76,175,80,.15);border-color:var(--green);color:var(--green);display:flex;align-items:center;gap:.3rem;}
+.menu-card.agotado .card-img{filter:grayscale(.6)opacity(.75);}
+.menu-card.agotado .card-btn-add{background:rgba(232,93,93,.08);border-color:rgba(232,93,93,.25);color:var(--red);cursor:not-allowed;pointer-events:none;font-size:.7rem;}
+.agotado-pill{position:absolute;top:.45rem;left:.45rem;background:rgba(232,93,93,.88);color:#fff;font-family:Oswald,sans-serif;font-size:.6rem;font-weight:700;letter-spacing:1px;padding:.18rem .5rem;border-radius:4px;pointer-events:none;}
+.card-img{position:relative;}
+.qty-wrap{display:flex;align-items:center;gap:.4rem;}
+.qty-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:7px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.qty-btn:hover{border-color:var(--gold3);color:var(--gold);}
+.qty-val{font-family:Oswald,sans-serif;font-size:.95rem;font-weight:600;color:var(--text);min-width:18px;text-align:center;}
+/* ── ORDER ── */
+.empty-order{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:2rem;gap:.75rem;text-align:center;}
+.empty-ico{font-size:3rem;}.empty-msg{font-family:Oswald,sans-serif;font-size:1.2rem;color:var(--text2);}.empty-sub{font-size:.83rem;color:var(--text3);}
+.order-list{padding:.75rem;}
+.order-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.85rem;display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.5rem;}
+.order-item-l{display:flex;align-items:flex-start;gap:.65rem;flex:1;}
+.order-emoji{font-size:1.6rem;flex-shrink:0;line-height:1;}
+.order-nm{font-family:Oswald,sans-serif;font-size:.95rem;font-weight:600;letter-spacing:.3px;}
+.order-mod{font-size:.72rem;color:var(--text3);margin-top:.2rem;}
+.order-item-r{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.order-pr{font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;color:var(--gold);}
+.remove-btn{background:rgba(232,93,93,.12);border:1px solid rgba(232,93,93,.25);color:var(--red);width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;}
+.remove-btn:hover{background:rgba(232,93,93,.25);}
+.order-footer{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin:.25rem .75rem 1rem;}
+.order-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.order-total-lbl{font-family:Oswald,sans-serif;font-size:.9rem;letter-spacing:1px;color:var(--text2);text-transform:uppercase;}
+.order-total-val{font-family:Oswald,sans-serif;font-size:1.5rem;font-weight:700;color:var(--gold);}
+.btn-confirm{display:block;width:100%;background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.9rem;border-radius:12px;font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+.btn-confirm:hover{opacity:.88;}
+
+/* ── TABLE MINI SELECTOR (in payment) ── */
+.table-mini-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin:.75rem;}
+.table-mini-lbl{font-family:Oswald,sans-serif;font-size:.78rem;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:.6rem;}
+.table-mini-grid{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem;}
+.tmb{background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:34px;height:34px;border-radius:8px;font-family:Oswald,sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.tmb:hover{border-color:var(--gold3);color:var(--text);}
+.tmb.sel{background:rgba(212,160,23,.15);border-color:var(--gold);color:var(--gold);}
+.pickup-mini{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:.45rem 1rem;border-radius:8px;font-size:.8rem;font-family:Inter,sans-serif;cursor:pointer;transition:all .2s;}
+.pickup-mini.sel{background:rgba(76,175,80,.12);border-color:var(--green);color:var(--green);}
+
+/* ── PAYMENT ── */
+.pay-summary{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin:.75rem;}
+.pay-sum-hd{font-family:Oswald,sans-serif;font-size:.85rem;letter-spacing:1px;color:var(--text2);text-transform:uppercase;margin-bottom:.75rem;}
+.pay-line{display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--border);font-size:.85rem;}
+.pay-line:last-child{border-bottom:none;}
+.pay-line-pr{color:var(--gold);font-family:Oswald,sans-serif;font-weight:600;}
+.pay-total{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0 .1rem;margin-top:.25rem;border-top:1px solid var(--border);}
+.pay-total-lbl{font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:.85rem;color:var(--text2);text-transform:uppercase;}
+.pay-total-val{font-family:Oswald,sans-serif;font-size:1.6rem;font-weight:700;color:var(--gold);}
+.pmethods-title{font-family:Oswald,sans-serif;font-size:.8rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;padding:.25rem 1.25rem .5rem;}
+.pmethod{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin:.35rem .75rem;cursor:pointer;transition:border-color .2s;overflow:hidden;}
+.pmethod.sel{border-color:var(--gold);}
+.pmethod-head{display:flex;align-items:center;gap:.85rem;padding:.9rem 1rem;}
+.pm-ico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.ico-mp{background:rgba(0,160,230,.2);}.ico-cash{background:rgba(76,175,80,.2);}.ico-card{background:rgba(139,92,246,.2);}
+.pm-nm{font-family:Oswald,sans-serif;font-size:.95rem;font-weight:600;letter-spacing:.3px;}
+.pm-dc{font-size:.73rem;color:var(--text3);margin-top:.15rem;}
+.pm-radio{margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s;}
+.pmethod.sel .pm-radio{border-color:var(--gold);}
+.radio-dot{width:8px;height:8px;border-radius:50%;background:transparent;transition:background .2s;}
+.pmethod.sel .radio-dot{background:var(--gold);}
+.mp-btn{display:block;width:calc(100% - 2rem);margin:.1rem 1rem .9rem;background:linear-gradient(135deg,#009fe3,#0070ad);color:#fff;border:none;padding:.8rem;border-radius:10px;font-family:Oswald,sans-serif;font-size:.88rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+.mp-btn:hover{opacity:.88;}
+.cash-box{background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.2);border-radius:10px;padding:.85rem;margin:.1rem 1rem .5rem;}
+.cash-nm{font-family:Oswald,sans-serif;font-size:.88rem;font-weight:600;color:var(--green);}
+.cash-dc{font-size:.73rem;color:var(--text3);margin-top:.2rem;}
+.card-form{margin:.1rem 1rem .9rem;display:flex;flex-direction:column;gap:.65rem;}
+.card-2col{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;}
+.card-inp{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:.75rem 1rem;font-size:.88rem;color:var(--text);width:100%;outline:none;transition:border-color .2s;font-family:Inter,sans-serif;}
+.card-inp:focus{border-color:var(--gold);}
+.card-inp::placeholder{color:var(--text3);}
+.card-btn{width:100%;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;padding:.85rem;border-radius:10px;font-family:Oswald,sans-serif;font-size:.9rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:opacity .2s;}
+.card-btn:hover{opacity:.88;}
+
+/* ── SUCCESS ── */
+.success-inner{display:flex;flex-direction:column;align-items:center;gap:.75rem;text-align:center;padding:2rem 1.5rem;}
+.success-icon{width:90px;height:90px;border-radius:50%;background:rgba(76,175,80,.12);border:2px solid rgba(76,175,80,.3);display:flex;align-items:center;justify-content:center;margin-bottom:.5rem;}
+.success-title{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:3px;}
+.success-order{font-family:Oswald,sans-serif;font-size:1.1rem;color:var(--gold);letter-spacing:2px;}
+.success-msg{font-size:.88rem;color:var(--text2);}
+.success-new{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.9rem 2.5rem;border-radius:12px;font-family:Oswald,sans-serif;font-size:1rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:1rem;text-decoration:none;display:inline-block;transition:opacity .2s;}
+.success-new:hover{opacity:.88;}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.active{opacity:1;pointer-events:all;}
+.modal{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:20px 20px 0 0;z-index:101;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:88vh;overflow-y:auto;}
+.modal.active{transform:translateY(0);}
+.modal-drag{width:40px;height:4px;border-radius:2px;background:var(--border);margin:1rem auto .5rem;}
+.modal-body{padding:.5rem 1.25rem 2rem;}
+.modal-img{width:100%;height:190px;border-radius:14px;overflow:hidden;margin-bottom:.85rem;}.modal-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.modal-title{font-family:Oswald,sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:.5px;text-align:center;margin-bottom:.3rem;}
+.modal-dc{font-size:.82rem;color:var(--text2);text-align:center;line-height:1.5;margin-bottom:1rem;}
+.modal-sec{font-family:Oswald,sans-serif;font-size:.78rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin:.75rem 0 .4rem;}
+.ing-list{display:flex;flex-direction:column;gap:.3rem;}
+.ing-item{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;background:var(--bg3);border-radius:9px;cursor:pointer;transition:opacity .2s;}
+.ing-item.ing-off{opacity:.45;}
+.ing-check{width:20px;height:20px;border-radius:5px;background:var(--bg2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.ing-check.chk{background:rgba(212,160,23,.2);border-color:var(--gold);}
+.extra-list{display:flex;flex-direction:column;gap:.4rem;}
+.extra-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;background:var(--bg3);border-radius:9px;}
+.extra-nm{font-size:.85rem;}.extra-pr{font-size:.73rem;color:var(--gold);margin-top:.15rem;}
+.modal-foot{display:flex;align-items:center;justify-content:space-between;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);gap:.75rem;}
+.modal-sub{font-family:Oswald,sans-serif;font-size:1rem;color:var(--text2);}
+.modal-sub strong{color:var(--gold);font-size:1.1rem;}
+.btn-add-cart{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#000;border:none;padding:.75rem 1.25rem;border-radius:10px;font-family:Oswald,sans-serif;font-size:.88rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+.btn-add-cart:hover{opacity:.88;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--nav) + 12px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.65rem 1.25rem;border-radius:50px;font-size:.82rem;z-index:200;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fi .3s ease forwards;}
+/* ── BRAND HEADER ── */
+.brand-hdr{background:var(--bg2);padding:1.5rem 1rem 1.1rem;text-align:center;border-bottom:1px solid var(--border);}
+.brand-logo-box{display:inline-flex;align-items:center;justify-content:center;padding:.5rem;margin-bottom:.75rem;}
+.brand-logo-img{width:170px;height:auto;display:block;filter:brightness(0) invert(1);opacity:.92;}
+.brand-addr{font-size:.76rem;color:var(--text2);margin-bottom:.55rem;letter-spacing:.3px;}
+.brand-socials{display:flex;justify-content:center;gap:.55rem;flex-wrap:wrap;}
+.brand-social{display:flex;align-items:center;gap:.38rem;padding:.38rem .8rem;border-radius:8px;font-size:.73rem;font-family:Inter,sans-serif;font-weight:600;text-decoration:none;letter-spacing:.3px;transition:opacity .2s;}
+.brand-social:hover{opacity:.8;}
+.brand-wa{background:rgba(37,211,102,.13);border:1px solid rgba(37,211,102,.28);color:#25d366;}
+.brand-ig{background:rgba(193,53,132,.13);border:1px solid rgba(193,53,132,.28);color:#c13584;}</style></head><body>
+
+<!-- ══ APP CONTAINER (screens isolated here, no scroll bleed) ══ -->
+<div id="app">
+
+  <div id="menu-screen" class="screen active">
+    <div class="brand-hdr">
+      <div class="brand-logo-box">
+        <img src="https://monline.com.ar/img_comercios/153e7e8e283dc83f613d6c0bcb733b60.png" class="brand-logo-img" alt="Inmigrante Resto Bar">
+      </div>
+      <div class="brand-addr">📍 64 e/ Av. 13 &amp; 14 N°923, La Plata</div>
+      <div class="brand-socials">
+        <a href="https://wa.me/5492216997705" class="brand-social brand-wa" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+        <a href="https://instagram.com/inmigrante.restobar" class="brand-social brand-ig" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          @inmigrante.restobar
+        </a>
+      </div>
+    </div>
+    <div class="screen-hd"><div class="screen-title">Menú</div></div>
+    <div class="menu-grid" id="menu-grid"></div>
+  </div>
+
+  <div id="drinks-screen" class="screen">
+    <div class="screen-hd"><div class="screen-title">Bebidas</div></div>
+    <div id="drinks-prompt-wrap"></div>
+    <div class="menu-grid" id="drinks-grid"></div>
+  </div>
+
+  <div id="order-screen" class="screen">
+    <div class="screen-hd"><div class="screen-title">Mi Pedido</div></div>
+    <div id="order-content"></div>
+  </div>
+
+  <div id="payment-screen" class="screen">
+    <div class="screen-hd">
+      <a href="#order" class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      <div class="screen-title">Pagar</div>
+    </div>
+    <div id="payment-content"></div>
+  </div>
+
+  <div id="success-screen" class="screen">
+    <div class="success-inner">
+      <div class="success-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="success-title">¡Pedido Confirmado!</div>
+      <div class="success-order" id="success-order"></div>
+      <div class="success-msg">En breve tu pedido estará listo</div>
+      <a href="#menu" class="success-new" onclick="resetApp()">Nuevo pedido</a>
+    </div>
+  </div>
+
+</div>
+<!-- ══ END APP ══ -->
+
+<!-- BOTTOM NAV — real <a href> links -->
+<nav class="bottom-nav">
+  <a href="#menu" class="nav-btn" id="nav-menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <span>Menú</span>
+  </a>
+  <a href="#drinks" class="nav-btn" id="nav-drinks">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v3l-3 3v12h10V9l-3-3V3z"/><path d="M7.5 14h9"/></svg>
+    <span>Bebidas</span>
+  </a>
+  <a href="#order" class="nav-btn" id="nav-order">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>Mi Pedido</span>
+  </a>
+</nav>
+
+<!-- FAB — also a real link -->
+<a href="#order" class="cart-fab" id="cart-fab">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+  <span class="cart-badge" id="cart-badge">0</span>
+</a>
+
+<!-- Modal + overlay + toast (outside #app so they float above everything) -->
+<div class="overlay" id="overlay" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-drag"></div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var MENU=[
+  {id:1,cat:'ENTRADAS',e:'\u{1F95F}',n:'Empanada de Carne',dc:'3 unidades',pr:11500,img:'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:2,cat:'ENTRADAS',e:'\u{1F9C6}',n:'Buñuelos de Espinaca',dc:'Con crema de hierbas',pr:11500,img:'',ing:[],ex:[]},
+  {id:3,cat:'ENTRADAS',e:'\u{1F373}',n:'Tortilla de Papa',dc:'Con jamón crudo y rúcula — individual',pr:11200,img:'',ing:[],ex:[]},
+  {id:4,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Provoleta Fundida',dc:'Con tomates secos y aceite de albahaca',pr:14800,img:'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:5,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas Fritas',dc:'',pr:11500,img:'https://images.unsplash.com/photo-1573080496219-bb964701c815?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:6,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas con Cheddar y Verdeo',dc:'Sin panceta',pr:14000,img:'',ing:[],ex:[]},
+  {id:7,cat:'ENTRADAS',e:'\u{1F360}',n:'Batatas Fritas',dc:'',pr:11500,img:'',ing:[],ex:[]},
+  {id:8,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Degustación de Quesos',dc:'',pr:17000,img:'',ing:[],ex:[]},
+  {id:9,cat:'ENTRADAS',e:'\u{1F991}',n:'Porción de Rabas',dc:'Con alioli',pr:28000,img:'',ing:[],ex:[]},
+  {id:10,cat:'ENTRADAS',e:'\u{1F364}',n:'Langostinos Rebozados',dc:'Con aderezo de pimientos',pr:22000,img:'',ing:[],ex:[]},
+  {id:11,cat:'ENTRADAS',e:'\u{1F35F}',n:'Papas Inmigrante',dc:'Fritas, cheddar, pulled bondiola y cebolla caramelizada',pr:16000,img:'https://images.unsplash.com/photo-1573080496219-bb964701c815?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:12,cat:'ENTRADAS',e:'\u{1F9C0}',n:'Bastones de Muzzarella x4',dc:'Con salsa marinara',pr:11500,img:'',ing:[],ex:[]},
+  {id:13,cat:'PICADAS PARA COMPARTIR',e:'\u{1F37D}',n:'Tabla de Campo',dc:'Quesos, fiambres, pan, nueces y cherry — para 2',pr:48000,img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:14,cat:'PICADAS PARA COMPARTIR',e:'\u{1F957}',n:'Picada Inmigrante',dc:'Croquetas de bondiola, bastones de muzzarella, pollo crocante, papas y 3 salsas',pr:34000,img:'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:15,cat:'ENSALADAS',e:'\u{1F957}',n:'Caesar',dc:'Hojas verdes, croutons, panceta crocante y pollo a la plancha',pr:18600,img:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:16,cat:'ENSALADAS',e:'\u{1F957}',n:'Inmigrante',dc:'Rúcula, cherry, queso azul, nueces y peras grilladas con reducción balsámica',pr:18600,img:'',ing:[],ex:[]},
+  {id:17,cat:'ENSALADAS',e:'\u{1F957}',n:'Vegetariana',dc:'Hojas verdes, vegetales asados, cebolla encurtida y tomate',pr:18600,img:'',ing:[],ex:[]},
+  {id:18,cat:'ENSALADAS',e:'\u{1F957}',n:'Italiana',dc:'Hojas verdes, queso rallado, tomates secos, albahaca y aceitunas',pr:18600,img:'',ing:[],ex:[]},
+  {id:19,cat:'PLATOS PRINCIPALES',e:'\u{1F416}',n:'Matambre de Cerdo XL',dc:'A la pizza con papas rejilla — para compartir',pr:57000,img:'',ing:[],ex:[]},
+  {id:20,cat:'PLATOS PRINCIPALES',e:'\u{1F969}',n:'Bondiola',dc:'Cocción baja temperatura con puré de toffee',pr:23000,img:'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:21,cat:'PLATOS PRINCIPALES',e:'\u{1F41F}',n:'Lomo de Salmón Grillado',dc:'Con crema de champiñón, chips de batata y ensalada de mar',pr:35000,img:'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:22,cat:'PLATOS PRINCIPALES',e:'\u{1F969}',n:'Bife de Chorizo',dc:'A la riojana',pr:33000,img:'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:23,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino de Calabaza',dc:'Con salsa de champiñón y verdeo',pr:23500,img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:24,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino de Jamón y Queso',dc:'Con filetto, crema o mixta',pr:25000,img:'',ing:[],ex:[]},
+  {id:25,cat:'PASTAS',e:'\u{1F35D}',n:'Ravioles de Verdura',dc:'Con salsa bechamel',pr:26000,img:'',ing:[],ex:[]},
+  {id:26,cat:'PASTAS',e:'\u{1F35D}',n:'Fetuccini',dc:'Con pesto de tomates secos',pr:21000,img:'',ing:[],ex:[]},
+  {id:27,cat:'PASTAS',e:'\u{1F35D}',n:'Ñoquis',dc:'Con bolognesa',pr:21000,img:'',ing:[],ex:[]},
+  {id:28,cat:'PASTAS',e:'\u{1F35D}',n:'Sorrentino Negro de Salmón',dc:'Con salsa de crema de salvia',pr:28500,img:'',ing:[],ex:[]},
+  {id:29,cat:'PASTAS',e:'\u{1F35D}',n:'Lasagna para 2',dc:'Pollo, espinaca, jamón y mozzarella con bolognesa',pr:40000,img:'',ing:[],ex:[]},
+  {id:30,cat:'MILANESAS',e:'\u{1F357}',n:'Milanesa de Pollo',dc:'Con cremoso de cabutia y papas fritas o ensalada',pr:18000,img:'',ing:[],ex:[]},
+  {id:31,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Napo XXL',dc:'Salsa fileto, muzzarella y tomates con papas fritas',pr:41000,img:'',ing:[],ex:[]},
+  {id:32,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Rex XXL',dc:'Cheddar, barbacoa, panceta y verdeo con papas fritas',pr:44000,img:'',ing:[],ex:[]},
+  {id:33,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Conte di Savoia XXL',dc:'Crema, mozzarella, sardo y espinaca con papas fritas',pr:44000,img:'',ing:[],ex:[]},
+  {id:34,cat:'MILANESAS',e:'\u{1F357}',n:'Mila a la Suiza',dc:'Con cremoso de cabutia o papas fritas',pr:22000,img:'',ing:[],ex:[]},
+  {id:35,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa de Carne XXL',dc:'Acompañada de papas fritas',pr:41000,img:'',ing:[],ex:[]},
+  {id:36,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa a Caballo XXL',dc:'Con huevos y papas fritas',pr:45000,img:'',ing:[],ex:[]},
+  {id:37,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Napolitana XXL',dc:'Con papas fritas',pr:47000,img:'',ing:[],ex:[]},
+  {id:38,cat:'MILANESAS',e:'\u{1F356}',n:'Milanesa Inmigrante XXL',dc:'Mozzarella, salsa fileto, panceta y huevo con papas fritas',pr:49000,img:'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:39,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'Cheeseburger',dc:'Doble medallón, cheddar, ketchup y cebolla',pr:17500,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:40,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'La Clásica',dc:'Medallón, lechuga, tomate, cheddar, pickles y mil islas',pr:15000,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:41,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'XXL Platense',dc:'Medallón 24cm, aros de cebolla, panceta, barbacoa y cheddar — para 4',pr:45000,img:'',ing:[],ex:[]},
+  {id:42,cat:'HAMBURGUESAS',e:'\u{1F354}',n:'Inmigrante',dc:'Doble medallón, cuádruple cheddar, bacon jam y cebolla crocante',pr:21500,img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:43,cat:'HAMBURGUESAS',e:'\u{1F96C}',n:'Veggie',dc:'Medallón vegano, cheddar vegano y salsa de zanahoria sin lactosa',pr:14500,img:'',ing:[],ex:[]},
+  {id:44,cat:'SANDWICHES',e:'\u{1F96A}',n:'Pollo Crispy',dc:'Pan papa, pollo crocante, rúcula, panceta y mayo de albahaca',pr:16000,img:'https://images.unsplash.com/photo-1562802378-063ec186a863?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:45,cat:'SANDWICHES',e:'\u{1F96A}',n:'Bondiola Braseada',dc:'Ciabatta, bondiola braseada, coleslaw, cheddar y papas de batata',pr:20000,img:'',ing:[],ex:[]},
+  {id:46,cat:'SANDWICHES',e:'\u{1F96A}',n:'Ternera Braseada',dc:'Ciabatta, ternera braseada y pimientos y cebolla encurtidos',pr:22500,img:'',ing:[],ex:[]},
+  {id:47,cat:'SANDWICHES',e:'\u{1F96C}',n:'Ciabatta Veggie',dc:'Falafel, lechuga, tomate, coleslaw y papas fritas',pr:15000,img:'',ing:[],ex:[]},
+  {id:48,cat:'PIZZAS',e:'\u{1F355}',n:'4 Quesos',dc:'',pr:20000,img:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:49,cat:'PIZZAS',e:'\u{1F355}',n:'Especial',dc:'Muzzarella, jamón y morrón',pr:17000,img:'',ing:[],ex:[]},
+  {id:50,cat:'PIZZAS',e:'\u{1F355}',n:'Jamón Crudo y Rúcula',dc:'Con queso parmesano',pr:19000,img:'',ing:[],ex:[]},
+  {id:51,cat:'PIZZAS',e:'\u{1F355}',n:'Champiñón y Verdeo',dc:'',pr:19000,img:'',ing:[],ex:[]},
+  {id:52,cat:'PIZZAS',e:'\u{1F355}',n:'Margarita',dc:'Muzzarella, cherry y aceite de albahaca',pr:17000,img:'',ing:[],ex:[]},
+  {id:53,cat:'PIZZAS',e:'\u{1F355}',n:'Muzzarella',dc:'',pr:15500,img:'',ing:[],ex:[]},
+  {id:54,cat:'PIZZAS',e:'\u{1F355}',n:'Inmigrante',dc:'Muzzarella, panceta, verdeo y huevos a la plancha',pr:19000,img:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&h=350&fit=crop&auto=format&q=80',ing:[],ex:[]},
+  {id:55,cat:'PIZZAS',e:'\u{1F355}',n:'Fugazzeta',dc:'Muzzarella, cebolla y aceitunas negras',pr:17000,img:'',ing:[],ex:[]},
+  {id:56,cat:'PIZZAS',e:'\u{1F355}',n:'Vegetariana',dc:'Mozzarella con vegetales asados y emulsión de zanahoria',pr:17000,img:'',ing:[],ex:[]},
+  {id:57,cat:'POSTRES',e:'\u{1F36E}',n:'Flan',dc:'Con dulce de leche, crema o mixto',pr:5500,img:'',ing:[],ex:[]},
+  {id:58,cat:'POSTRES',e:'\u{1F368}',n:'Copa Helado Oreo',dc:'Tres bochas con Oreo',pr:6000,img:'',ing:[],ex:[]},
+  {id:59,cat:'POSTRES',e:'\u{1F368}',n:'Copa de Helado',dc:'2 bochas a elección',pr:5000,img:'',ing:[],ex:[]},
+  {id:60,cat:'POSTRES',e:'\u{1F368}',n:'Copa Inmigrante',dc:'2 bochas, brownie, nueces y charlotte de chocolate',pr:9000,img:'',ing:[],ex:[]},
+  {id:61,cat:'POSTRES',e:'\u{1F36B}',n:'Volcán de Chocolate',dc:'',pr:7200,img:'',ing:[],ex:[]},
+  {id:62,cat:'POSTRES',e:'\u{1F96E}',n:'Tiramisú Inmigrante',dc:'Con licor de Baileys Irish Cream',pr:7400,img:'',ing:[],ex:[]},
+  {id:63,cat:'POSTRES',e:'\u{1F370}',n:'Chocotorta',dc:'',pr:7400,img:'',ing:[],ex:[]},
+  {id:64,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake de Frutos Rojos',dc:'',pr:7400,img:'',ing:[],ex:[]},
+  {id:65,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake de Maracuyá',dc:'',pr:7400,img:'',ing:[],ex:[]},
+  {id:66,cat:'POSTRES',e:'\u{1F370}',n:'Cheesecake Oreo',dc:'',pr:7400,img:'',ing:[],ex:[]}
+];
+var DRINKS=[
+  {id:101,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Agua sin Gas',dc:'500 cc',pr:4000,img:'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:102,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Agua con Gas',dc:'500 cc',pr:4000,img:''},
+  {id:103,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Sifón de Soda',dc:'650 cc',pr:4500,img:''},
+  {id:104,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F964}',n:'Gaseosas',dc:'Línea Coca-Cola — 350 cc',pr:4000,img:'https://images.unsplash.com/photo-1566657817181-c69e4a8eeb1e?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:105,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F964}',n:'Gaseosas',dc:'Línea Coca-Cola — 500 cc',pr:4500,img:''},
+  {id:106,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F4A7}',n:'Aguas Saborizadas',dc:'Aquarius',pr:4500,img:''},
+  {id:107,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34B}',n:'Vaso de Limonada',dc:'',pr:5000,img:'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:108,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34B}',n:'Jarra de Limonada',dc:'Rinde 2½ vasos',pr:9000,img:''},
+  {id:109,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F33F}',n:'Vaso Menta y Jengibre',dc:'',pr:5300,img:''},
+  {id:110,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F33F}',n:'Jarra Menta y Jengibre',dc:'Rinde 2½ vasos',pr:9500,img:''},
+  {id:111,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Exprimido de Naranja',dc:'',pr:5000,img:'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:112,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Jarra de Exprimido',dc:'',pr:9500,img:''},
+  {id:113,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Vaso Naranja y Maracuyá',dc:'',pr:5000,img:''},
+  {id:114,cat:'BEBIDAS SIN ALCOHOL',e:'\u{1F34A}',n:'Jarra Naranja y Maracuyá',dc:'',pr:9500,img:''},
+  {id:201,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Aperol Spritz',dc:'',pr:8500,img:''},
+  {id:202,cat:'COCTELERÍA CLÁSICA',e:'\u{1F943}',n:'Black Label',dc:'Medida',pr:10000,img:''},
+  {id:203,cat:'COCTELERÍA CLÁSICA',e:'\u{1F943}',n:'Red Label',dc:'Medida',pr:10000,img:''},
+  {id:204,cat:'COCTELERÍA CLÁSICA',e:'\u{1F34B}',n:'Caipirinha',dc:'',pr:8500,img:'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:205,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Caipiroska',dc:'',pr:8500,img:''},
+  {id:206,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Caipirissima',dc:'',pr:8000,img:''},
+  {id:207,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Campari',dc:'',pr:7500,img:''},
+  {id:208,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Cosmopolitan',dc:'',pr:8600,img:''},
+  {id:209,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cuba Libre',dc:'',pr:7500,img:''},
+  {id:210,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cynar',dc:'',pr:7000,img:''},
+  {id:211,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Cynar Julep',dc:'',pr:7500,img:''},
+  {id:212,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Destornillador',dc:'',pr:7500,img:''},
+  {id:213,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Fernet',dc:'',pr:7500,img:'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:214,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Ferroviario',dc:'',pr:7500,img:''},
+  {id:215,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gancia',dc:'',pr:7200,img:''},
+  {id:216,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gancia Batido',dc:'',pr:7500,img:''},
+  {id:217,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Gin Tonic',dc:'',pr:7600,img:''},
+  {id:218,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Malibú',dc:'',pr:7500,img:''},
+  {id:219,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Margarita Frozen',dc:'',pr:8600,img:''},
+  {id:220,cat:'COCTELERÍA CLÁSICA',e:'\u{1F379}',n:'Mojito Clásico',dc:'',pr:7500,img:''},
+  {id:221,cat:'COCTELERÍA CLÁSICA',e:'\u{1F378}',n:'Negroni',dc:'',pr:8600,img:''},
+  {id:301,cat:'COCTELERÍA DE AUTOR',e:'\u{1F338}',n:'Tónico Herbolareo',dc:'',pr:6000,img:''},
+  {id:302,cat:'COCTELERÍA DE AUTOR',e:'\u{1F377}',n:'Destello de Vid',dc:'',pr:6000,img:''},
+  {id:303,cat:'COCTELERÍA DE AUTOR',e:'\u{1F30A}',n:'Caribbean Blue',dc:'',pr:10000,img:''},
+  {id:304,cat:'COCTELERÍA DE AUTOR',e:'\u{1F943}',n:'Old Fashioned',dc:'',pr:9000,img:''},
+  {id:305,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Ginmigrante',dc:'',pr:8800,img:''},
+  {id:306,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Hormiga Negra',dc:'',pr:8500,img:''},
+  {id:307,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Gin Bill',dc:'',pr:8800,img:''},
+  {id:308,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Chiquito',dc:'',pr:8500,img:''},
+  {id:309,cat:'COCTELERÍA DE AUTOR',e:'\u{1F379}',n:'Vita di Aperol',dc:'',pr:8600,img:''},
+  {id:401,cat:'VINOS',e:'\u{1F377}',n:'Copa de Vino',dc:'Malbec o Blanco Dulce',pr:6000,img:'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:402,cat:'VINOS',e:'\u{1F377}',n:'Amalaya Blanco Dulce',dc:'Botella',pr:17000,img:''},
+  {id:403,cat:'VINOS',e:'\u{1F377}',n:'Pispi',dc:'Botella',pr:21000,img:''},
+  {id:404,cat:'VINOS',e:'\u{1F377}',n:'Chico Malo',dc:'Botella',pr:13000,img:''},
+  {id:405,cat:'VINOS',e:'\u{1F377}',n:'Otro Loco Más',dc:'Botella',pr:14500,img:''},
+  {id:406,cat:'VINOS',e:'\u{1F377}',n:'Norton Elegido Malbec',dc:'Botella',pr:14000,img:''},
+  {id:407,cat:'VINOS',e:'\u{1F377}',n:'Benjamin Chardonnay',dc:'Botella',pr:15000,img:''},
+  {id:408,cat:'VINOS',e:'\u{1F37E}',n:'Novecento Extra Brut',dc:'Botella',pr:14000,img:''},
+  {id:409,cat:'VINOS',e:'\u{1F377}',n:'Trumpeter Malbec',dc:'Botella',pr:22000,img:''},
+  {id:410,cat:'VINOS',e:'\u{1F377}',n:'Talisman',dc:'Botella',pr:18000,img:''},
+  {id:411,cat:'VINOS',e:'\u{1F377}',n:'Saint Felicien Cabernet',dc:'Botella',pr:18000,img:''},
+  {id:412,cat:'VINOS',e:'\u{1F377}',n:'Berrinche',dc:'Tempranillo / Syrah / Cabernet — Botella',pr:15000,img:''},
+  {id:413,cat:'VINOS',e:'\u{1F37E}',n:'Melodía Chardonnay Extra Brut',dc:'Botella',pr:17000,img:''},
+  {id:501,cat:'CANILLAS',e:'\u{1F37A}',n:'IPA',dc:'Mama Quilla',pr:6300,img:'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=500&h=350&fit=crop&auto=format&q=80'},
+  {id:502,cat:'CANILLAS',e:'\u{1F37A}',n:'Golden',dc:'Mama Quilla',pr:6300,img:''},
+  {id:503,cat:'CANILLAS',e:'\u{1F37A}',n:'Cream Ale',dc:'Mama Quilla',pr:6300,img:''},
+  {id:504,cat:'CANILLAS',e:'\u{1F37A}',n:'Kolsh',dc:'Mama Quilla',pr:6300,img:''},
+  {id:505,cat:'CANILLAS',e:'\u{1F37A}',n:'Honey',dc:'Mama Quilla',pr:6300,img:''},
+  {id:506,cat:'CANILLAS',e:'\u{1F37A}',n:'Porter',dc:'Mama Quilla',pr:6300,img:''},
+  {id:507,cat:'CANILLAS',e:'\u{1F37A}',n:'Scottish',dc:'Mama Quilla',pr:6300,img:''},
+  {id:508,cat:'CANILLAS',e:'\u{1F37A}',n:'APA',dc:'Mama Quilla',pr:6300,img:''},
+  {id:509,cat:'CANILLAS',e:'\u{1F37A}',n:'NEIPA',dc:'Mama Quilla',pr:6300,img:''},
+  {id:510,cat:'CANILLAS',e:'\u{1F37A}',n:'Stella Porrón',dc:'',pr:6000,img:''},
+  {id:511,cat:'CANILLAS',e:'\u{1F37A}',n:'Stella Sin Alcohol',dc:'',pr:6000,img:''},
+  {id:512,cat:'CANILLAS',e:'\u{1F37A}',n:'Porrón Cerveza Roja',dc:'Sin TACC',pr:7000,img:''},
+  {id:513,cat:'CANILLAS',e:'\u{1F37A}',n:'Porrón IPA',dc:'Sin TACC',pr:7000,img:''},
+  {id:514,cat:'CANILLAS',e:'\u{1F37A}',n:'Michelob',dc:'Sin gluten',pr:6000,img:''},
+  {id:515,cat:'CANILLAS',e:'\u{1F379}',n:'Vermut',dc:'',pr:7000,img:''}
+];
+var G=['linear-gradient(135deg,#d4a017,#a07810)','linear-gradient(135deg,#e85d5d,#a03030)','linear-gradient(135deg,#4caf50,#2d7a30)','linear-gradient(135deg,#5b8dee,#2952a3)','linear-gradient(135deg,#e87d3e,#a04010)','linear-gradient(135deg,#9b5de5,#5b21b6)'];
+var cart=[],selT=null,isP=false,selPay=null,dQ={},dpDismissed=false,STOCK={};
+
+/* ══ ROUTING — driven entirely by hashchange ══ */
+window.addEventListener('hashchange', function(){
+  routeTo((window.location.hash||'#menu').slice(1));
+});
+
+function routeTo(tab){
+  // drinks-prompt intercept: if going to order with food but no drinks
+  var hasFood=cart.some(function(c){return !c.isDr;});
+  var hasDrinks=cart.some(function(c){return c.isDr;});
+  if(tab==='order' && hasFood && !hasDrinks && !dpDismissed){
+    // redirect → drinks with prompt (setting hash triggers hashchange again)
+    window.location.hash='drinks';
+    return;
+  }
+  if(tab==='drinks'){
+    var showPrompt=hasFood&&!hasDrinks&&!dpDismissed;
+    renderDrinksPrompt(showPrompt);
+  }
+  if(tab==='order'){renderOrder();}
+  if(tab==='payment'){renderPay();}
+
+  // show correct screen
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var sc=document.getElementById(tab+'-screen');
+  if(sc)sc.classList.add('active');
+
+  // highlight correct nav link
+  document.querySelectorAll('.nav-btn').forEach(function(a){a.classList.remove('active');});
+  var nb=document.getElementById('nav-'+tab);
+  if(nb)nb.classList.add('active');
+}
+
+/* prevent default on nav links and use hashchange instead so the intercept works */
+document.querySelectorAll('.nav-btn, .cart-fab').forEach(function(el){
+  el.addEventListener('click',function(e){
+    var href=(this.getAttribute('href')||'').replace('#','');
+    if(!href)return;
+    e.preventDefault();
+    window.location.hash=href;
+    // hashchange fires → routeTo
+  });
+});
+/* ══ BUILD MENU / DRINKS ══ */
+function buildMenu(){
+  var g=document.getElementById('menu-grid');g.innerHTML='';
+  var cats=[],seen={};
+  MENU.forEach(function(i){if(!seen[i.cat||'']){seen[i.cat||'']=1;cats.push(i.cat||'');}});
+  cats.forEach(function(cat){
+    var t=document.createElement('div');t.className='cat-title';t.textContent=cat;g.appendChild(t);
+    var wrap=document.createElement('div');wrap.className='cat-grid';
+    MENU.filter(function(i){return (i.cat||'')===cat;}).forEach(function(item,idx){
+      var inCart=cart.some(function(c){return c.id===item.id;});
+      var out=STOCK[item.id]===false;
+      var d=document.createElement('div');d.className='menu-card fi'+(out?' agotado':'');
+      var pill=out?'<div class="agotado-pill">AGOTADO</div>':'';
+      var btnTxt=out?'Agotado':inCart?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> En pedido':'+ Agregar';
+      var btnCls='card-btn-add'+(inCart&&!out?' in-cart':'');
+      var btnClick=out?'':' onclick="openModal('+item.id+')"';
+      d.innerHTML='<div class="card-img" data-g="'+(idx%G.length)+'" data-e="'+item.e+'">'+pill+'<img src="'+item.img+'" alt="'+item.n+'" loading="lazy" onerror="imgErr(this)"></div>'+
+        '<div class="card-body"><div class="card-name">'+item.n+'</div><div class="card-dc">'+item.dc+'</div>'+
+        '<div class="card-foot"><span class="card-pr">$'+item.pr.toLocaleString('es-AR')+'</span>'+
+        '<button class="'+btnCls+'"'+btnClick+'>'+btnTxt+'</button></div></div>';
+      wrap.appendChild(d);
+    });
+    g.appendChild(wrap);
+  });
+}
+function buildDrinks(){
+  var g=document.getElementById('drinks-grid');g.innerHTML='';
+  var cats=[],seen={};
+  DRINKS.forEach(function(i){if(!seen[i.cat||'']){seen[i.cat||'']=1;cats.push(i.cat||'');}});
+  cats.forEach(function(cat){
+    var t=document.createElement('div');t.className='cat-title';t.textContent=cat;g.appendChild(t);
+    var wrap=document.createElement('div');wrap.className='cat-grid';
+    DRINKS.filter(function(i){return (i.cat||'')===cat;}).forEach(function(item,idx){
+      var q=dQ[item.id]||0;
+      var out=STOCK[item.id]===false;
+      var d=document.createElement('div');d.className='menu-card fi'+(out?' agotado':'');
+      var pill=out?'<div class="agotado-pill">AGOTADO</div>':'';
+      var ctrl=out?'<button class="card-btn-add" style="pointer-events:none;cursor:not-allowed;background:rgba(232,93,93,.08);border-color:rgba(232,93,93,.25);color:var(--red);font-size:.7rem;">Agotado</button>':
+        '<div class="qty-wrap">'+
+        '<button class="qty-btn" onclick="chgDrink('+item.id+',-1)">&#8722;</button>'+
+        '<span class="qty-val" data-dqid="'+item.id+'">'+q+'</span>'+
+        '<button class="qty-btn" onclick="chgDrink('+item.id+',1)">&#43;</button>'+
+        '</div>';
+      d.innerHTML='<div class="card-img" data-g="'+((idx+2)%G.length)+'" data-e="'+item.e+'">'+pill+'<img src="'+item.img+'" alt="'+item.n+'" loading="lazy" onerror="imgErr(this)"></div>'+
+        '<div class="card-body"><div class="card-name">'+item.n+'</div><div class="card-dc">'+item.dc+'</div>'+
+        '<div class="card-foot"><span class="card-pr">$'+item.pr.toLocaleString('es-AR')+'</span>'+ctrl+'</div></div>';
+      wrap.appendChild(d);
+    });
+    g.appendChild(wrap);
+  });
+}
+function renderDrinksPrompt(show){
+  var w=document.getElementById('drinks-prompt-wrap');
+  if(show){
+    w.innerHTML='<div class="drinks-prompt">'+
+      '<div><div class="drinks-prompt-txt">¿Y para tomar?</div><div class="drinks-prompt-sub">Elegí algo antes de confirmar</div></div>'+
+      '<button class="dp-skip" onclick="skipToOrder()">Ir al pedido →</button></div>';
+  }else{w.innerHTML='';}
+}
+function skipToOrder(){
+  dpDismissed=true;
+  window.location.hash='order';
+}
+function chgDrink(id,delta){
+  var item=DRINKS.find(function(d){return d.id===id;});if(!item)return;
+  dQ[id]=(dQ[id]||0)+delta;if(dQ[id]<0)dQ[id]=0;
+  document.querySelectorAll('[data-dqid="'+id+'"]').forEach(function(el){el.textContent=dQ[id];});
+  cart=cart.filter(function(c){return c.id!==id;});
+  if(dQ[id]>0)cart.push({id:item.id,e:item.e,n:item.n,pr:item.pr*dQ[id],isDr:true,q:dQ[id]});
+  if(dQ[id]>0){dpDismissed=true;document.getElementById('drinks-prompt-wrap').innerHTML='';}
+  updateBadge();
+}
+
+/* ══ MODAL ══ */
+function openModal(id){
+  var item=MENU.find(function(m){return m.id===id;});if(!item)return;
+  var ex=cart.find(function(c){return c.id===id;});
+  renderModal(item,ex?new Set(ex.remIng||[]):new Set(),ex?Object.assign({},ex.exQ||{}):{});
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('modal').classList.add('active');
+}
+function renderModal(item,remIng,exQ){
+  var sub=item.pr;item.ex.forEach(function(x){sub+=(exQ[x.n]||0)*x.p;});
+  var ih=item.ing.map(function(ig){
+    var rm=remIng.has(ig);
+    return '<div class="ing-item'+(rm?' ing-off':'')+'" onclick="toggleIng(this,\''+ig+'\')">'+
+      '<div class="ing-check'+(rm?'':' chk')+'">'+(!rm?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':'')+'</div>'+
+      '<span>'+ig+'</span></div>';
+  }).join('');
+  var eh=item.ex.map(function(x){
+    var q=exQ[x.n]||0;
+    return '<div class="extra-item">'+
+      '<div><div class="extra-nm">'+x.n+'</div>'+(x.p>0?'<div class="extra-pr">+$'+x.p.toLocaleString('es-AR')+'</div>':'<div class="extra-pr">Gratis</div>')+'</div>'+
+      '<div class="qty-wrap">'+
+      '<button class="qty-btn" onclick="chgExtra(this,'+x.p+',\''+x.n+'\')">&#8722;</button>'+
+      '<span class="qty-val">'+q+'</span>'+
+      '<button class="qty-btn" onclick="chgExtra(this,'+x.p+',\''+x.n+'\')">&#43;</button>'+
+      '</div></div>';
+  }).join('');
+  var mb=document.getElementById('modal-body');
+  mb.innerHTML='<div class="modal-img" id="modal-img-wrap"><img src="'+item.img+'" alt="'+item.n+'" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>'+
+    '<div class="modal-title">'+item.n+'</div><div class="modal-dc">'+item.dc+'</div>'+
+    '<div class="modal-sec">Ingredientes</div><div class="ing-list">'+ih+'</div>'+
+    '<div class="modal-sec">Extras</div><div class="extra-list">'+eh+'</div>'+
+    '<div class="modal-foot"><div class="modal-sub">Subtotal: <strong>$'+sub.toLocaleString('es-AR')+'</strong></div>'+
+    '<button class="btn-add-cart" onclick="addToCart('+item.id+')">Agregar al pedido</button></div>';
+  mb._item=item;mb._remIng=remIng;mb._exQ=exQ;
+}
+function toggleIng(el,ig){
+  var mb=document.getElementById('modal-body'),ri=mb._remIng;
+  if(ri.has(ig))ri.delete(ig);else ri.add(ig);
+  renderModal(mb._item,ri,mb._exQ);
+}
+function chgExtra(btn,price,name){
+  var mb=document.getElementById('modal-body'),w=btn.parentElement,qEl=w.querySelector('.qty-val');
+  var q=Math.max(0,(parseInt(qEl.textContent)||0)+(btn.textContent==='+'?1:-1));
+  mb._exQ[name]=q;renderModal(mb._item,mb._remIng,mb._exQ);
+}
+function addToCart(id){
+  var mb=document.getElementById('modal-body'),item=mb._item,remIng=mb._remIng,exQ=mb._exQ;
+  var extra=0;item.ex.forEach(function(x){extra+=(exQ[x.n]||0)*x.p;});
+  cart=cart.filter(function(c){return c.id!==id;});
+  cart.push({id:item.id,e:item.e,n:item.n,pr:item.pr+extra,base:item.pr,remIng:Array.from(remIng),exQ:Object.assign({},exQ)});
+  closeModal();updateBadge();buildMenu();toast(item.e+' '+item.n+' agregado');setTimeout(function(){window.location.hash='drinks';},650);
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('modal').classList.remove('active');
+}
+function updateBadge(){
+  var t=cart.reduce(function(s,i){return s+(i.isDr?i.q:1);},0);
+  document.getElementById('cart-badge').textContent=t;
+}
+/* ══ ORDER ══ */
+function renderOrder(){
+  var el=document.getElementById('order-content');
+  if(!cart.length){
+    el.innerHTML='<div class="empty-order"><div class="empty-ico">🛒</div><div class="empty-msg">Tu pedido está vacío</div><div class="empty-sub">Agregá algo del menú o bebidas</div></div>';
+    return;
+  }
+  var total=cart.reduce(function(s,i){return s+i.pr;},0);
+  var rows=cart.map(function(item){
+    var mods='';
+    if(!item.isDr){
+      if(item.remIng&&item.remIng.length)mods+='<div class="order-mod">Sin: '+item.remIng.join(', ')+'</div>';
+      if(item.exQ)Object.keys(item.exQ).forEach(function(k){if(item.exQ[k]>0)mods+='<div class="order-mod">+'+item.exQ[k]+' '+k+'</div>';});
+    }
+    return '<div class="order-item">'+
+      '<div class="order-item-l"><div class="order-emoji">'+item.e+'</div>'+
+      '<div><div class="order-nm">'+item.n+(item.isDr?' x'+item.q:'')+'</div>'+mods+'</div></div>'+
+      '<div class="order-item-r"><span class="order-pr">$'+item.pr.toLocaleString('es-AR')+'</span>'+
+      '<button class="remove-btn" onclick="removeItem('+item.id+')">'+
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'+
+      '</button></div></div>';
+  }).join('');
+  var where=isP?'Para retirar':(selT?'Mesa '+selT:'Sin mesa asignada');
+  el.innerHTML='<div class="order-list">'+rows+'</div>'+
+    '<div class="order-footer">'+
+    '<div class="order-total-row"><span class="order-total-lbl">Total</span><span class="order-total-val">$'+total.toLocaleString('es-AR')+'</span></div>'+
+    '<button class="btn-confirm" onclick="goPay()">Continuar al pago</button>'+
+    '</div>';
+}
+function removeItem(id){
+  var item=cart.find(function(c){return c.id===id;});
+  if(item&&item.isDr)dQ[id]=0;
+  cart=cart.filter(function(c){return c.id!==id;});
+  updateBadge();buildMenu();
+  if(document.getElementById('drinks-screen').classList.contains('active'))buildDrinks();
+  renderOrder();
+}
+
+/* ══ PAYMENT ══ */
+function goPay(){
+  if(!cart.length)return;
+  selPay=null;selT=null;isP=false;
+  window.location.hash='payment';
+}
+function pickTable(n){
+  isP=(n===0);selT=n;
+  document.querySelectorAll('.tmb').forEach(function(b){b.classList.remove('sel');});
+  document.getElementById('pmb').classList.toggle('sel',isP);
+  if(n>0){var cc=document.querySelectorAll('.tmb');if(cc[n-1])cc[n-1].classList.add('sel');}
+  renderPay();
+}
+function pickPay(m){if(selPay===m)return;selPay=m;renderPay();}
+function fmtCard(el){var v=el.value.replace(/\D/g,'').substring(0,16);el.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function fmtExp(el){var v=el.value.replace(/\D/g,'').substring(0,4);if(v.length>2)v=v.substring(0,2)+'/'+v.substring(2);el.value=v;}
+function handleMP(e){e.stopPropagation();toast('Redirigiendo a Mercado Pago...');setTimeout(confirmOrder,1500);}
+function handleCard(e){e.stopPropagation();toast('Procesando pago con tarjeta...');setTimeout(confirmOrder,1500);}
+function renderPay(){
+  var sub=cart.reduce(function(s,i){return s+i.pr;},0);
+  var where=isP?'Para retirar':(selT?'Mesa '+selT:'—');
+  var lines=cart.map(function(i){
+    return '<div class="pay-line"><span>'+i.e+' '+(i.isDr?i.n+' x'+i.q:i.n)+'</span><span class="pay-line-pr">$'+i.pr.toLocaleString('es-AR')+'</span></div>';
+  }).join('');
+  var tc='';for(var i=1;i<=20;i++)tc+='<button class="tmb'+(selT===i?' sel':'')+'" onclick="pickTable('+i+')">'+i+'</button>';
+  var tableBlock='<div class="table-mini-wrap"><div class="table-mini-lbl">¿Dónde estás?</div><div class="table-mini-grid">'+tc+'</div><button class="pickup-mini'+(isP?' sel':'')+'" id="pmb" onclick="pickTable(0)">Para retirar en caja</button></div>';
+  var mpBtn=selPay==='mp'?'<button class="mp-btn" onclick="handleMP(event)">&#128179; Pagar con Mercado Pago</button>':'';
+  var cico='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/><rect x="6" y="13" width="3" height="2" rx=".5"/></svg>';
+  var cardForm=selPay==='card'?'<div class="card-form" onclick="event.stopPropagation()"><input class="card-inp" type="text" placeholder="0000 0000 0000 0000" maxlength="19" oninput="fmtCard(this)"><div class="card-2col"><input class="card-inp" type="text" placeholder="Nombre en la tarjeta"><input class="card-inp" type="text" placeholder="MM/AA" maxlength="5" oninput="fmtExp(this)"></div><button class="card-btn" onclick="handleCard(event)">Pagar ahora</button></div>':'';
+  var cashBox=selPay==='cash'?'<div class="cash-box"><div class="cash-nm">Pedido listo para confirmar</div><div class="cash-dc">El pago se realiza en efectivo en caja o con el mozo</div></div><button class="btn-confirm" style="margin:.5rem 1rem .9rem;width:calc(100% - 2rem)" onclick="confirmOrder()">Confirmar Pedido</button>':'';
+  document.getElementById('payment-content').innerHTML=
+    tableBlock+
+    '<div class="pay-summary"><div class="pay-sum-hd">Resumen — '+where+'</div>'+lines+
+    '<div class="pay-total"><span class="pay-total-lbl">Total</span><span class="pay-total-val">$'+sub.toLocaleString('es-AR')+'</span></div></div>'+
+    '<div class="pmethods-title">Método de pago</div>'+
+    '<div class="pmethod'+(selPay==='mp'?' sel':'')+'" onclick="pickPay(\'mp\')">'+
+      '<div class="pmethod-head"><div class="pm-ico ico-mp">&#128179;</div><div><div class="pm-nm">Mercado Pago</div><div class="pm-dc">Débito, crédito o saldo MP</div></div><div class="pm-radio"><div class="radio-dot"></div></div></div>'+mpBtn+
+    '</div>'+
+    '<div class="pmethod'+(selPay==='card'?' sel':'')+'" onclick="pickPay(\'card\')">'+
+      '<div class="pmethod-head"><div class="pm-ico ico-card">'+cico+'</div><div><div class="pm-nm">Tarjeta</div><div class="pm-dc">Crédito o débito — Visa, Mastercard, Amex</div></div><div class="pm-radio"><div class="radio-dot"></div></div></div>'+cardForm+
+    '</div>'+
+    '<div class="pmethod'+(selPay==='cash'?' sel':'')+'" onclick="pickPay(\'cash\')">'+
+      '<div class="pmethod-head"><div class="pm-ico ico-cash">&#128181;</div><div><div class="pm-nm">Efectivo</div><div class="pm-dc">Pagás en caja o cuando se acerque el mozo</div></div><div class="pm-radio"><div class="radio-dot"></div></div></div>'+cashBox+
+    '</div>';
+}
+
+/* ══ SUCCESS / RESET ══ */
+function confirmOrder(){
+  var n=Math.floor(10000+Math.random()*90000);
+  var orderObj={
+    id:'#'+n,ts:Date.now(),table:selT,pickup:isP,pay:selPay,
+    items:cart.map(function(i){return Object.assign({},i);}),
+    total:cart.reduce(function(s,i){return s+i.pr;},0),
+    status:'nuevo'
+  };
+  wsSend({type:'new-order',order:orderObj});
+  document.getElementById('success-order').textContent='Pedido '+orderObj.id;
+  cart=[];dQ={};selPay=null;selT=null;isP=false;dpDismissed=false;updateBadge();
+  window.location.hash='success';
+}
+function resetApp(){buildMenu();buildDrinks();}
+
+/* ══ IMG FALLBACK ══ */
+function imgErr(img){var p=img.parentElement;p.style.background=G[p.dataset.g];p.style.display='flex';p.style.alignItems='center';p.style.justifyContent='center';p.style.fontSize='2.5rem';p.innerHTML=p.dataset.e;}
+
+/* ══ TOAST ══ */
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+
+/* ══ WEBSOCKET ══ */
+var ws,wsReady=false;
+function connectWS(){
+  var url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
+  try{
+    ws=new WebSocket(url);
+    ws.onopen=function(){wsReady=true;};
+    ws.onclose=function(){wsReady=false;setTimeout(connectWS,2000);};
+    ws.onerror=function(){};
+    ws.onmessage=function(ev){
+      var d=JSON.parse(ev.data);
+      if(d.type==='init'){
+        if(d.menu)MENU=d.menu;
+        if(d.drinks)DRINKS=d.drinks;
+        if(d.stock)STOCK=d.stock||{};
+        buildMenu();buildDrinks();
+      }
+      if(d.type==='menu-update'){MENU=d.menu;buildMenu();}
+      if(d.type==='drinks-update'){DRINKS=d.drinks;buildDrinks();}
+      if(d.type==='stock-update'){STOCK=d.stock;buildMenu();buildDrinks();}
+    };
+  }catch(ex){}
+}
+function wsSend(msg){if(ws&&ws.readyState===1)ws.send(JSON.stringify(msg));}
+
+/* ══ INIT ══ */
+window.onload=function(){
+  buildMenu();buildDrinks();
+  var h=(window.location.hash||'#menu').slice(1);
+  routeTo(['menu','drinks','order'].indexOf(h)>=0?h:'menu');
+  if(!window.location.hash)window.location.hash='menu';
+  connectWS();
+};
+</script>
+</body></html>
