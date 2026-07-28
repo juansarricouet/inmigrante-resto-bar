@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "notification.mp3", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/state", "dest": "/api/state.js" },
+    { "src": "/api/message", "dest": "/api/message.js" },
+    { "handle": "filesystem" },
+    { "src": "/", "dest": "/bar-app.html" },
+    { "src": "/admin", "dest": "/admin.html" }
+  ]
+}

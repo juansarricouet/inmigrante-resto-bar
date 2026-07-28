@@ -5,7 +5,9 @@ const { WebSocketServer } = require('ws');
 
 const PORT       = process.env.PORT || 3000;
 const STATIC_DIR = __dirname;
-const DATA_FILE  = path.join(__dirname, 'data.json');
+const DATA_DIR   = process.env.DATA_DIR || __dirname;
+const DATA_FILE  = path.join(DATA_DIR, 'data.json');
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch(e) {}
 
 /* ── Data store (memory + file) ── */
 let store = { orders: [], menu: null, drinks: null, stock: {}, customers: [] };

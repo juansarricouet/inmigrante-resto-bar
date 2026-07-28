@@ -540,19 +540,44 @@ function saveDrinks(){wsSend({type:'drinks-update',drinks:adminDrinks});}
 function saveStock(){wsSend({type:'stock-update',stock:adminStock});}
 function saveOrders(){}  // server manages persistence
 
-/* ══ WEBSOCKET ══ */
-var ws,wsReady=false;
+/* ══ SYNC — WebSocket (servidor local) con fallback HTTP (Vercel) ══ */
+var ws,wsReady=false,httpMode=false,wsEverOpen=false,lastState='',knownIds=null;
 function connectWS(){
   var url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
   try{
     ws=new WebSocket(url);
-    ws.onopen=function(){wsReady=true;};
-    ws.onclose=function(){wsReady=false;setTimeout(connectWS,2000);};
+    ws.onopen=function(){wsReady=true;wsEverOpen=true;};
+    ws.onclose=function(){wsReady=false;if(wsEverOpen){setTimeout(connectWS,2000);}else{startHTTP();}};
     ws.onerror=function(){};
     ws.onmessage=function(ev){handleWSmsg(JSON.parse(ev.data));};
-  }catch(e){}
+  }catch(e){startHTTP();}
 }
-function wsSend(msg){if(ws&&ws.readyState===1)ws.send(JSON.stringify(msg));}
+function startHTTP(){
+  if(httpMode)return;httpMode=true;
+  fetchState();setInterval(fetchState,4000);
+}
+function fetchState(){
+  fetch('/api/state').then(function(r){return r.json();}).then(function(d){
+    var snap=JSON.stringify(d);
+    if(snap===lastState)return;
+    lastState=snap;
+    var ids={};(d.orders||[]).forEach(function(o){ids[o.id]=1;});
+    var hasNew=false;
+    if(knownIds){(d.orders||[]).forEach(function(o){if(!knownIds[o.id])hasNew=true;});}
+    knownIds=ids;
+    handleWSmsg({type:'init',orders:d.orders,menu:d.menu,drinks:d.drinks,stock:d.stock,customers:d.customers});
+    if(hasNew)showPing();
+  }).catch(function(){});
+}
+function wsSend(msg){
+  if(ws&&ws.readyState===1){ws.send(JSON.stringify(msg));return;}
+  if(httpMode){
+    fetch('/api/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)})
+      .then(function(r){return r.json();})
+      .then(function(d){if(d&&d.type)handleWSmsg(d);fetchState();})
+      .catch(function(){});
+  }
+}
 function broadcast(msg){wsSend(msg);}
 function handleWSmsg(d){
   if(d.type==='init'){

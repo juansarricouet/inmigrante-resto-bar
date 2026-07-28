@@ -800,43 +800,62 @@ function imgErr(img){var p=img.parentElement;p.style.background=G[p.dataset.g];p
 /* ══ TOAST ══ */
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 
-/* ══ WEBSOCKET ══ */
-var ws,wsReady=false;
+/* ══ SYNC — WebSocket (servidor local) con fallback HTTP (Vercel) ══ */
+var ws,wsReady=false,httpMode=false,wsEverOpen=false,lastSnap={};
+function handleMsg(d){
+  if(d.type==='init'){
+    if(d.menu)MENU=d.menu;
+    if(d.drinks)DRINKS=d.drinks;
+    if(d.stock)STOCK=d.stock||{};
+    buildMenu();buildDrinks();
+  }
+  if(d.type==='menu-update'){MENU=d.menu;buildMenu();}
+  if(d.type==='drinks-update'){DRINKS=d.drinks;buildDrinks();}
+  if(d.type==='stock-update'){STOCK=d.stock;buildMenu();buildDrinks();}
+  if(d.type==='customer-found'){
+    if(d.customer){
+      currentCustomer=d.customer;
+      localStorage.setItem('imm_customer',JSON.stringify(d.customer));
+      discountApplied=false; // returning customer, no discount
+      closeRegModal();
+      window.location.hash='payment';
+      toast('👋 Bienvenido '+d.customer.name);
+    }else{
+      toast('No encontramos esa cuenta — registrate');
+      openRegisterModal();
+    }
+  }
+}
 function connectWS(){
   var url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
   try{
     ws=new WebSocket(url);
-    ws.onopen=function(){wsReady=true;};
-    ws.onclose=function(){wsReady=false;setTimeout(connectWS,2000);};
+    ws.onopen=function(){wsReady=true;wsEverOpen=true;};
+    ws.onclose=function(){wsReady=false;if(wsEverOpen){setTimeout(connectWS,2000);}else{startHTTP();}};
     ws.onerror=function(){};
-    ws.onmessage=function(ev){
-      var d=JSON.parse(ev.data);
-      if(d.type==='init'){
-        if(d.menu)MENU=d.menu;
-        if(d.drinks)DRINKS=d.drinks;
-        if(d.stock)STOCK=d.stock||{};
-        buildMenu();buildDrinks();
-      }
-      if(d.type==='menu-update'){MENU=d.menu;buildMenu();}
-      if(d.type==='drinks-update'){DRINKS=d.drinks;buildDrinks();}
-      if(d.type==='stock-update'){STOCK=d.stock;buildMenu();buildDrinks();}
-      if(d.type==='customer-found'){
-        if(d.customer){
-          currentCustomer=d.customer;
-          localStorage.setItem('imm_customer',JSON.stringify(d.customer));
-          discountApplied=false; // returning customer, no discount
-          closeRegModal();
-          window.location.hash='payment';
-          toast('👋 Bienvenido '+d.customer.name);
-        }else{
-          toast('No encontramos esa cuenta — registrate');
-          openRegisterModal();
-        }
-      }
-    };
-  }catch(ex){}
+    ws.onmessage=function(ev){handleMsg(JSON.parse(ev.data));};
+  }catch(ex){startHTTP();}
 }
-function wsSend(msg){if(ws&&ws.readyState===1)ws.send(JSON.stringify(msg));}
+function startHTTP(){
+  if(httpMode)return;httpMode=true;
+  fetchState();setInterval(fetchState,4000);
+}
+function fetchState(){
+  fetch('/api/state').then(function(r){return r.json();}).then(function(d){
+    var changed=false;
+    ['menu','drinks','stock'].forEach(function(k){var s=JSON.stringify(d[k]);if(lastSnap[k]!==s){lastSnap[k]=s;changed=true;}});
+    if(changed)handleMsg({type:'init',menu:d.menu,drinks:d.drinks,stock:d.stock});
+  }).catch(function(){});
+}
+function wsSend(msg){
+  if(ws&&ws.readyState===1){ws.send(JSON.stringify(msg));return;}
+  if(httpMode){
+    fetch('/api/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg)})
+      .then(function(r){return r.json();})
+      .then(function(d){if(d&&d.type)handleMsg(d);})
+      .catch(function(){});
+  }
+}
 
 /* ══ INIT ══ */
 window.onload=function(){
